@@ -50,6 +50,8 @@ class LcdCommands:
     FUNCTION_SET = 0b00100000
     SET_CGRAM = 0b01000000
     SET_DDRAM = 0b01000000
+    FIRST_LINE = 0b10000000
+    SECOND_LINE = 0b11000000
 
     @staticmethod
     def entry_mode(increment_cursor=False, shift=False) -> int:
@@ -89,9 +91,6 @@ class LcdCommands:
 
 # LCD class for displaying to a parallel interface LDC
 class Lcd:
-    width = 16
-    height = 2
-
     def __init__(self, rs, e, d4, d5, d6, d7):
         self.rs = Pin(rs, Pin.OUT)
         self.e = Pin(e, Pin.OUT)
@@ -119,6 +118,18 @@ class Lcd:
     def cursor_home(self):
         self.rs.value(RS_INSTRUCTION_SELECT)
         self.__write_char(LcdCommands.HOME, MODE_8_BITS)
+        self.rs.value(RS_DATA_SELECT)
+        self.__delay()
+
+    def first_line(self):
+        self.rs.value(RS_INSTRUCTION_SELECT)
+        self.__write_char(LcdCommands.FIRST_LINE, MODE_8_BITS)
+        self.rs.value(RS_DATA_SELECT)
+        self.__delay()
+
+    def second_line(self):
+        self.rs.value(RS_INSTRUCTION_SELECT)
+        self.__write_char(LcdCommands.SECOND_LINE, MODE_8_BITS)
         self.rs.value(RS_DATA_SELECT)
         self.__delay()
 
@@ -179,18 +190,12 @@ class Lcd:
         self.rs.value(RS_DATA_SELECT)
 
     def move_to(self, line: int, column: int):
-        shift = column
-        if line == 0:
-            shift = 0
-        elif line == 1:
-            shift = 40
-        elif line == 2:
-            shift = 20
-        elif line == 3:
-            shift = 60
+        if line == 1:
+            self.second_line()
+        else:
+            self.first_line()
 
-        self.cursor_home()
-        for _ in range(0, shift + column):
+        for _ in range(0, column):
             self.move_cursor_right()
 
     def __write_char(self, char, mode):
