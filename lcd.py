@@ -31,6 +31,20 @@ class BitMask:
     BIT0 = 0b00000001
 
 
+class Characters:
+
+
+    Backslash = [
+        0b00000,
+        0b10000,
+        0b01000,
+        0b00100,
+        0b00010,
+        0b00001,
+        0b00000,
+        0b00000]
+
+
 class LcdCommands:
     """
     8-bit Command codes needed to operate the LCD
@@ -47,8 +61,8 @@ class LcdCommands:
     CURSOR_RIGHT = 0b00010100
     SHIFT_TEXT_LEFT = 0b00011000
     SHIFT_TEXT_RIGHT = 0b00011100
-    FUNCTION_SET = 0b00100000
-    SET_CGRAM = 0b01000000
+    FUNCTION_SET = 0b00010100
+    SET_CGRAM = 0b00100000
     SET_DDRAM = 0b01000000
     FIRST_LINE = 0b10000000
     SECOND_LINE = 0b11000000
@@ -187,6 +201,29 @@ class Lcd:
     def display_on(self):
         self.rs.value(RS_INSTRUCTION_SELECT)
         self.__write_char(LcdCommands.DISPLAY_ON, MODE_8_BITS)
+        self.rs.value(RS_DATA_SELECT)
+
+    def create_character(self, character, position=0):
+        """
+        Create a custom character and store it on the LCD.
+        There can only be 8 custom characters loaded onto each LCD.
+
+        :param character: The array of 8 columns of bitfields of length 5
+        :param position: The position (0 to 7) in the buffer to save the custom character.
+        """
+        if 0 <= position < 8:
+            return
+
+        self.rs.value(RS_INSTRUCTION_SELECT)
+
+        # Enable the character writing at the given position
+        command = LcdCommands.SET_CGRAM | position << 3
+        self.__write_char(byte, MODE_8_BITS)
+
+        # Write the character to the display
+        for byte in character:
+            self.__write_char(byte, MODE_8_BITS)
+
         self.rs.value(RS_DATA_SELECT)
 
     def move_to(self, line: int, column: int):
