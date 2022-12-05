@@ -31,20 +31,6 @@ class BitMask:
     BIT0 = 0b00000001
 
 
-class Characters:
-
-
-    Backslash = [
-        0b00000,
-        0b10000,
-        0b01000,
-        0b00100,
-        0b00010,
-        0b00001,
-        0b00000,
-        0b00000]
-
-
 class LcdCommands:
     """
     8-bit Command codes needed to operate the LCD
@@ -218,7 +204,7 @@ class Lcd:
 
         # Enable the character writing at the given position
         command = LcdCommands.SET_CGRAM | position << 3
-        self.__write_char(byte, MODE_8_BITS)
+        self.__write_char(command, MODE_8_BITS)
 
         # Write the character to the display
         for byte in character:
