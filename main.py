@@ -1,10 +1,7 @@
-from display.lcd import Lcd
+import controller
+print("Launching the space team")
 
-lcd = Lcd(rs=16, e=17, d4=18, d5=19, d6=20, d7=21)
-lcd.display(on=True, cursor=True, blink=True)
+controls = controller.Controls(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 
-lcd.move_to(0, 1)
-lcd.write('Hi, Human.')
-
-lcd.move_to(1, 1)
-lcd.write('Hello, Pico!')
+while True:
+    print(controls.fv1.state)
