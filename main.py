@@ -1,7 +1,19 @@
-import controller
-print("Launching the space team")
+from machine import Pin
+from sensor import Switch
+import time
 
-controls = controller.Controls(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+led = Pin(25, Pin.OUT)
+led.value(1)
+
+
+def toggle(pin: Pin):
+    pin.value(1 - pin.value())
+
+
+switch = Switch(2, on_change=toggle)
 
 while True:
-    print(controls.fv1.state)
+    led.on()
+    time.sleep_ms(500)
+    led.off()
+    time.sleep_ms(500)

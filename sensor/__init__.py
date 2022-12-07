@@ -1,2 +1,2 @@
-from rotary_encoder import RotaryEncoder
-from switch import Switch
+from sensor.rotary_encoder import RotaryEncoder
+from sensor.switch import Switch

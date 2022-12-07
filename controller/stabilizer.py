@@ -1,6 +1,3 @@
-from machine import Pin
-
-
 class Stabilizer:
     """
     Stabilizer panel

@@ -51,10 +51,12 @@ def read_fan_vent(self, vent_id: int = 0):
     assert (0 <= vent_id < 4)
     match vent_id:
         case 0:
-            self.fv1.state
+            return self.fv1.state
         case 1:
-            self.fv2.state
+            return self.fv2.state
         case 2:
-            self.fv3.state
+            return self.fv3.state
         case 3:
-            self.fv4.state
+            return self.fv4.state
+
+    return 1
