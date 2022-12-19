@@ -4,11 +4,17 @@ https://github.com/GuyCarver/MicroPython/blob/master/esp32/joystick.py
 """
 from machine import ADC, Pin
 
+
 class Joystick:
-    _x_center = 1789.0
-    _y_center = 1817.0
-    _pos_x = 4095.0 - _x_center
-    _pos_y = 4095.0 - _y_center
+    _x_center = 31500.
+    _x_min = 6750.
+    _x_max = 57500.
+    _pos_x = 65535. - _x_center
+
+    _y_center = 33000.
+    _y_min = 6500.
+    _y_max = 60000.
+    _pos_y = 65535. - _y_center
 
     def __init__(self, x_pin, y_pin):
         self._x_axis = ADC(Pin(x_pin))
@@ -32,8 +38,16 @@ class Joystick:
         return self._y
 
     def update(self):
-        self._xA[self._index] = self._x_axis.read_u16()
-        self._yA[self._index] = self._y_axis.read_u16()
+        x = self._x_axis.read_u16()
+        y = self._y_axis.read_u16()
+
+        self._x_min = min(self._x_min, x)
+        self._y_min = min(self._y_min, y)
+        self._x_max = min(self._x_max, x)
+        self._y_max = min(self._y_max, y)
+
+        self._xA[self._index] = x
+        self._yA[self._index] = y
 
         self._index += 1
         if self._index >= 3:
