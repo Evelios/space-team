@@ -1,23 +1,17 @@
-from machine import Pin
-from sensor import Switch, Button, ButtonLed
+import utime
 
-led = Pin(25, Pin.OUT)
-led.off()
+import machine
+from machine import I2C
+from pico_i2c_lcd import I2cLcd
 
-print("Space Team!")
+from horizontal import HorizontalDial
 
+I2C_ADDR = 39
 
-def toggle(sw: Switch):
-    led.value(sw.value())
+print("Running test_main")
 
-
-def on(button: ButtonLed):
-    button.on()
-
-
-def off(button: ButtonLed):
-    button.off()
+i2c = I2C(0, sda=machine.Pin(0), scl=machine.Pin(1), freq=400000)
+dial = HorizontalDial(i2c, I2C_ADDR)
 
 
-# switch = Switch(2, on_change=toggle)
-click = ButtonLed(3, 4, on_pressed=on, on_released=off)
+dial.display()
