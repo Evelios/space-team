@@ -11,7 +11,7 @@ class Engine:
 
         :param cy1: Cycle switch 1
         :param cy2: Cycle switch 2
-        :param cy3: Cycle switch 3
+        :param cy3: Cycle switch
         :param cy4: Cycle switch 4
         """
         self.cy1 = Pin(cy1, Pin.IN)
