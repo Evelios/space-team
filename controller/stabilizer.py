@@ -1,4 +1,7 @@
-from machine import Pin
+from machine import Pin, I2C
+
+from display.pico_i2c_lcd import I2cLcd
+from sensor.rotary_encoder import RotaryEncoder
 
 
 class Stabilizer:
@@ -9,8 +12,21 @@ class Stabilizer:
     stability = 0
     """Stability of this device. Range -1 -> 1"""
 
-    rotary_encoder = None
+    rotary_encoder = RotaryEncoder
     """stabilizer_input"""
 
-    def __init__(self, p1, p2, p3, p4, p5, p6):
-        self.rotary_encoder = (p1, p2, p3, p4, p5, p6)
+    def __init__(self, p1, p2, p3, p4):
+        self.rotary_encoder = RotaryEncoder(p1, p2, p3, p4)
+
+        i2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)
+        self.lcd = I2cLcd(i2c=i2c, i2c_addr=0x3f, num_lines=2, num_columns=16)
+
+    def update(self):
+        self.stability = self.rotary_encoder.read()
+        self.lcd.move_to(0, 0)
+        self.lcd.putstr("  ")
+        self.lcd.move_to(0, 0)
+        self.lcd.putstr(str(self.stability))
+        self.lcd.move_to(0, 1)
+        self.lcd.putstr(f"{self.rotary_encoder.v1} {self.rotary_encoder.v2} {self.rotary_encoder.v3} {self.rotary_encoder.v4}")
+
