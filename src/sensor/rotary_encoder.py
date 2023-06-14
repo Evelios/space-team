@@ -25,10 +25,10 @@ class RotaryEncoder:
         """
         Create a rotary encoder from all the 6 pin wired to it.
 
-        :param p1: Pin position 1
+        :param p1: Pin position 1 (MSB)
         :param p2: Pin position 2
         :param p3: Pin position 3
-        :param p4: Pin position 4
+        :param p4: Pin position 4 (LSB)
         """
         self.p1 = Pin(p1, mode=Pin.IN, pull=Pin.PULL_UP)
         self.p2 = Pin(p2, mode=Pin.IN, pull=Pin.PULL_UP)
