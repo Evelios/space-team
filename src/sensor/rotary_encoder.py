@@ -1,6 +1,11 @@
 from machine import Pin
 
 
+def inverse(x):
+    """ Get the binary inverse of x. 1 -> 0 and 0 -> 1."""
+    return 1 - x
+
+
 class RotaryEncoder:
     """
     Mechanical Oak Rotary Encoder
@@ -12,10 +17,11 @@ class RotaryEncoder:
     p1: Pin
     p2: Pin
     p3: Pin
+    p4: Pin
     position: int
     callbacks: list
 
-    def __init__(self, p1, p2, p3, p4):
+    def __init__(self, p1: int, p2: int, p3: int, p4: int):
         """
         Create a rotary encoder from all the 6 pin wired to it.
 
@@ -24,10 +30,10 @@ class RotaryEncoder:
         :param p3: Pin position 3
         :param p4: Pin position 4
         """
-        self.p1 = Pin(p1, Pin.IN)
-        self.p2 = Pin(p2, Pin.IN)
-        self.p3 = Pin(p3, Pin.IN)
-        self.p4 = Pin(p4, Pin.IN)
+        self.p1 = Pin(p1, mode=Pin.IN, pull=Pin.PULL_UP)
+        self.p2 = Pin(p2, mode=Pin.IN, pull=Pin.PULL_UP)
+        self.p3 = Pin(p3, mode=Pin.IN, pull=Pin.PULL_UP)
+        self.p4 = Pin(p4, mode=Pin.IN, pull=Pin.PULL_UP)
         self.position = 0
         self.callbacks = []
 
@@ -40,9 +46,9 @@ class RotaryEncoder:
 
         :return: The current position of the rotary encoder from 0 to 15
         """
-        encoding = self.p1.value()
+        encoding = inverse(self.p1.value())
         for pin in [self.p2, self.p3, self.p4]:
-            encoding = encoding << 1 + pin.value()
+            encoding = encoding << 1 + inverse(pin.value())
 
         return encoding
 
@@ -57,8 +63,11 @@ class RotaryEncoder:
 
     # ---- Events ----
 
-    def on_change(self, callback: list) -> None:
+    def on_change(self, callback) -> None:
         """
         :param callback: Function that gets called when the rotary encoder changes value.
+        ```
+        () -> None
+        ```
         """
-        self.callbacks = self.callbacks + callback
+        self.callbacks.append(callback)

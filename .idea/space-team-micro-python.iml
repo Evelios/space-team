@@ -9,14 +9,12 @@
   </component>
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/controller" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/display" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/sensor" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
-      <excludeFolder url="file://$MODULE_DIR$/.idea/libraries" />
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
+      <excludeFolder url="file://$MODULE_DIR$/firmware" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (space-team-for-real)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="MicroPython" level="project" />
     <orderEntry type="library" name="MicroPython" level="project" />
