@@ -1,6 +1,6 @@
 from machine import I2C
 import utime
-from pico_i2c_lcd import I2cLcd
+from display.pico_i2c_lcd import I2cLcd
 from util import clamp, remap
 
 
