@@ -14,7 +14,7 @@ class LcdApi:
     # header file, however, I changed the definitions from bit numbers
     # to bit masks.
     #
-    # HD44780 LCD controller command set
+    # HD44780 LCD panels command set
 
     LCD_CLR = 0x01              # DB0: clear display
     LCD_HOME = 0x02             # DB1: return to home position
