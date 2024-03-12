@@ -1,4 +1,4 @@
-from display.mileage import Mileage
+from ..display.mileage import Mileage
 import time
 
 

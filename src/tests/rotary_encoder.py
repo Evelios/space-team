@@ -1,5 +1,5 @@
 # Testing the functionality of the rotary encoder
-from rotary_encoder import RotaryEncoder
+from ..sensor.rotary_encoder import RotaryEncoder
 
 # ---- Variables ----
 
