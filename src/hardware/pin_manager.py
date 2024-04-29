@@ -1,7 +1,7 @@
 from .adcmux import AdcMux
 
 from mcp2317 import *
-from i2c import I2C
+from lcd import I2C
 import smbus
 
 

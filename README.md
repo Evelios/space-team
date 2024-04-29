@@ -3,6 +3,7 @@
 ## Development
 
 * Latest Pico Firmware: https://micropython.org/download/rp2-pico/
+* Getting Micropython Working on Teensy 3.X: https://learn.sparkfun.com/tutorials/how-to-load-micropython-on-a-microcontroller-board/teensy-3x
 
 ## Libraries
 

@@ -1,16 +1,10 @@
-import machine
+from machine import I2C
 import utime
 from display.lcd_pico import I2cLcd
 from util import clamp, remap
 
 
-class Stability:
-    """
-    Stability Panel: Made up of an LCD screen and rotating crank. On the LCD screen you display the stability slider
-    and your stability is adjusted with the crank shaft. The crank knows which position it is at by a series of
-    mechanical encoders for 24 positions from 4 different pins. Cranking left and right will move stability in the
-    same direction if you are looking from the top of the rotation. Clockwise moves right, counterclockwise moves left.
-    """
+class LiquidGauge:
     ROWS = 2
     COLS = 16
 
@@ -95,19 +89,11 @@ class Stability:
         0b10000,
         0b10000]
 
-    def __init__(self, i2c: machine.I2C, i2c_addr: int, pin1: int, pin2: int, pin3: int, pin4: int):
+    def __init__(self, i2c: I2C, i2c_addr: int = 39):
         self.lcd = I2cLcd(i2c=i2c, i2c_addr=i2c_addr, num_lines=self.ROWS, num_columns=self.COLS)
         utime.sleep_ms(100)
         self.__custom_characters()
-        self._position = 0
-        self.pin1 = machine.Pin(pin1, machine.Pin.IN)
-        """ Pin 1 From Rotary Motor: Bit 1 of Encoder, LSB"""
-        self.pin2 = machine.Pin(pin2, machine.Pin.IN)
-        """ Pin 2 From Rotary Motor: Bit 2 of Encoder"""
-        self.pin3 = machine.Pin(pin3, machine.Pin.IN)
-        """ Pin 3 From Rotary Motor: Bit 3 of Encoder"""
-        self.pin4 = machine.Pin(pin4, machine.Pin.IN)
-        """ Pin 4 From Rotary Motor: Bit 4 of Encoder, MSB"""
+        self.position = 0
 
     def __custom_characters(self):
         """ Set the custom characters used for the LCD to display stability. """
@@ -128,31 +114,27 @@ class Stability:
         self.lcd.custom_char(5, self.BOTTOM_INVERTED)
         self.lcd.custom_char(6, self.BOTTOM_LEFT_ARROW)
         self.lcd.custom_char(7, self.BOTTOM_RIGHT_ARROW)
-        self.a = self.position
 
-    @property
-    def position(self) -> float:
+    def set_position(self, position: float) -> None:
         """
-        Get and set the current stability. The steering is considered stable when at 0. Either direction to -1 or +1 is
-        away from the stable point.
+        Set the current stability. The steering is considered stable when at 0. Either direction to -1 or +1 is away
+        from the stable point.
+        :param position: [-1 to 1] The current steering
         """
-        return self._position
 
-    @position.setter
-    def position(self, position: float) -> None:
         clamped = clamp(position, -1, 1)
         column = int(round(remap(clamped, -1, 1, 0, self.COLS)))
 
         if column != self.position:
-            self._position = column
+            self.position = column
             self.display()
 
     def display(self) -> None:
         self.lcd.clear()
         self.lcd.hide_cursor()
 
-        top = ''
-        bottom = ''
+        top = ""
+        bottom = ""
 
         for col in range(self.COLS):
             if col == self.position - 1:
@@ -170,8 +152,3 @@ class Stability:
 
         self.lcd.putstr(top)
         self.lcd.putstr(bottom)
-
-    def debug(self):
-        self.lcd.clear()
-        self.lcd.putstr(f'Stability {self.position}\n')
-        self.lcd.putstr(f'{self.pin1.value()}, {self.pin2.value()}, {self.pin3.value()}, {self.pin4.value()}')
