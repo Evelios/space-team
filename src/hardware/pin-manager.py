@@ -1,6 +1,6 @@
 from .adcmux import AdcMux
 
-from mcp2317 import *
+from mcp2317 import MCP23017
 from i2c import I2C
 import smbus
 
@@ -63,4 +63,5 @@ class SpaceTeam:
     def analog_read(self, pin: int) -> int:
         return self.adc.read(pin)
 
-    def analog_write(self, pin:int, value:int) -> None:
+    def analog_write(self, pin: int, value: int) -> None:
+        pass

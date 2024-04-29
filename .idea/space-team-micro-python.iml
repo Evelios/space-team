@@ -13,12 +13,14 @@
       <sourceFolder url="file://$MODULE_DIR$/src/panels" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/sensor" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/hardware" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/.idea/libraries" />
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (space-team)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="MicroPython" level="project" />
     <orderEntry type="library" name="MicroPython" level="project" />
     <orderEntry type="library" name="MicroPython" level="project" />
   </component>
