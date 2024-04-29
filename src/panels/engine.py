@@ -6,15 +6,21 @@ class Engine:
     Engine panel
     """
 
-    def __init__(self, cy1, cy2, cy3, cy4):
+    def __init__(self, pinmanager, i2c):
         """
+        :param pinmanager:
+        :param i2c:
+        """
+        self.cycle1 = 1
+        self.cycle2 = 2
+        self.cycle3 = 3
+        self.cycle4 = 4
 
-        :param cy1: Cycle switch 1
-        :param cy2: Cycle switch 2
-        :param cy3: Cycle switch
-        :param cy4: Cycle switch 4
-        """
-        self.cy1 = Pin(cy1, Pin.IN)
-        self.cy2 = Pin(cy2, Pin.IN)
-        self.cy3 = Pin(cy3, Pin.IN)
-        self.cy4 = Pin(cy4, Pin.IN)
+        self.fuel_cell1 = 5
+        self.fuel_cell2 = 6
+        self.fuel_cell3 = 7
+        self.fuel_cell4 = 8
+
+        self.on_off = 9
+
+        self.lcd = None
