@@ -1,10 +1,12 @@
-from .adcmux import AdcMux
-from util import clamp
+
 
 from mcp2317 import MCP23017
 from i2c import I2C
 import machine
 import smbus
+
+from .adcmux import AdcMux
+from util import clamp
 
 
 class PinManager:

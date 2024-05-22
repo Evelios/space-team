@@ -95,19 +95,11 @@ class Stability:
         0b10000,
         0b10000]
 
-    def __init__(self, i2c: machine.I2C, i2c_addr: int, pin1: int, pin2: int, pin3: int, pin4: int):
+    def __init__(self, i2c: machine.I2C, i2c_addr: int):
         self.lcd = I2cLcd(i2c=i2c, i2c_addr=i2c_addr, num_lines=self.ROWS, num_columns=self.COLS)
         utime.sleep_ms(100)
         self.__custom_characters()
         self._position = 0
-        self.pin1 = machine.Pin(pin1, machine.Pin.IN)
-        """ Pin 1 From Rotary Motor: Bit 1 of Encoder, LSB"""
-        self.pin2 = machine.Pin(pin2, machine.Pin.IN)
-        """ Pin 2 From Rotary Motor: Bit 2 of Encoder"""
-        self.pin3 = machine.Pin(pin3, machine.Pin.IN)
-        """ Pin 3 From Rotary Motor: Bit 3 of Encoder"""
-        self.pin4 = machine.Pin(pin4, machine.Pin.IN)
-        """ Pin 4 From Rotary Motor: Bit 4 of Encoder, MSB"""
 
     def __custom_characters(self):
         """ Set the custom characters used for the LCD to display stability. """
@@ -174,4 +166,3 @@ class Stability:
     def debug(self):
         self.lcd.clear()
         self.lcd.putstr(f'Stability {self.position}\n')
-        self.lcd.putstr(f'{self.pin1.value()}, {self.pin2.value()}, {self.pin3.value()}, {self.pin4.value()}')
