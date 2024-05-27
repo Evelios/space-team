@@ -1,4 +1,5 @@
-from tests import stability_display, lcd_basic, ping_pong, i2c_pullup
+# from tests import lcd_basic, ping_pong, i2c_pullup, vibration_motor
+from tests import stability_display
 
 print(f"""
       Running Space Team
@@ -7,13 +8,15 @@ print(f"""
 
 
 def main():
-    i2c_pullup.main()
+    stability_display.main()
 
 
 def all_tests():
-    lcd_basic.main()
-    stability_display.main()
-    ping_pong.main()
+    # vibration_motor.main()
+    # i2c_pullup.main()
+    # lcd_basic.main()
+    # ping_pong.main()
+    pass
 
 
 if __name__ == "__main__":

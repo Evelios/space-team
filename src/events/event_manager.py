@@ -1,4 +1,17 @@
-from typing import Dict, Any
+"""
+Event manager class handling (un)subscriptions and event calls for all events.
+
+Notes: https://refactoring.guru/design-patterns/observer
+"""
+
+from typing import Dict, Any, Hashable, Callable, List
+from enum import Enum
+
+
+class Event(Enum):
+    """
+    Inheritable class for any event that is going to be added to the event manager.
+    """
 
 
 class EventManager:
@@ -7,9 +20,9 @@ class EventManager:
         """ Initialize the event manager. """
 
         """ All listeners to all events. """
-        self.listeners: Dict[Any, Any] = {}
+        self.listeners: Dict[(Event, Any), List[Callable]] = {}
 
-    def subscribe(self, event_type, listener) -> None:
+    def subscribe(self, event_type: Hashable, listener: Any, ) -> None:
         """
         The listener will subscribe to events and be notified in the future when those events are triggered.
 

@@ -1,12 +1,9 @@
-
-
-from mcp2317 import MCP23017
-from i2c import I2C
 import machine
-import smbus
+from typing import Dict, Union
 
+from .mcp23017 import MCP23017
 from .adcmux import AdcMux
-from util import clamp
+from events.event_manager import EventManager
 
 
 class PinManager:
@@ -15,91 +12,128 @@ class PinManager:
     manager takes care of routing communication through the digital and analog input/output expander chips.
     """
 
-    def __init__(self, i2c: I2C):
+    def __init__(self, i2c: machine.I2C):
         self.i2c = i2c
 
         self.pins1to16 = MCP23017(0x20, i2c)
         self.pins17to32 = MCP23017(0x21, i2c)
-        self.pins33to48 = MCP23017(0x22, i2c)
+        self.pins49to64 = MCP23017(0x22, i2c)
         self.adc = AdcMux(1, 0, 0, 0, 0)
+        self.local_pins: Dict[int, Union[machine.Pin, machine.ADC]] = {}  # Holds the gpio 33 -> 48
 
         # Sampling for reading pin inputs and monitoring for changes
         self._sample_rate = 50  # ms
         self.sample_timer = machine.Timer(period=self._sample_rate, callback=self.sample_pins)
 
         # Initialize a dictionary of previous digital pin states
-        self.digital_pins = {(key, 0) for key in range(1, 65)}
+        self.digital_pins = {key: 0 for key in range(1, 65)}
         self.digital_callbacks = {}
         self.digital_callbacks_any_pin = []
 
         # Initialize a dictionary of previous analog pin states
-        self.analog_pins = {(key, 0.0) for key in range(1, 17)}
+        self.analog_pins = {key: 0.0 for key in range(1, 17)}
         self.analog_callbacks = {}
         self.analog_callbacks_any_pin = []
+
+    # ---- Private Methods ---------------------------------------------------------------------------------------------
+    def _init_local_io(self):
+        for gpio in range(33, 42 + 1):
+            pin = gpio - 27  # Pin offset for the first section of IO pins
+            self.local_pins[gpio] = machine.Pin(pin, mode=machine.Pin.IN, pull=machine.Pin.PULL_UP)
+
+        for gpio in range(43, 45):
+            pin = 64 - gpio  # Pin offset for the second section of IO pins
+            self.local_pins[gpio] = machine.Pin(pin, mode=machine.Pin.IN, pull=machine.Pin.PULL_UP)
+
+        a1 = machine.ADC(1)
+        a2 = machine.ADC(2)
+
+        self.local_pins[47] = a1
+        self.local_pins[48] = a2
 
     # ---- Digital Pin Logic -------------------------------------------------------------------------------------------
 
     # Set the pin mode of a pin on the chip
-    def set_pin_mode(self, pin: int, mode: int) -> None:
-        if pin < 0:
+    def set_pin_mode(self, gpio: int, mode: int) -> None:
+        """
+
+        :param gpio: Pin number for GPIO 1 -> 64
+        :param mode: 1 = input pin, 0 = output pin
+        """
+        if gpio <= 0:
             return
-        elif pin <= 16:
-            self.pins1to16.set_pin_mode(pin, mode)
-        elif pin <= 32:
-            self.pins17to32.set_pin_mode(pin - 16, mode)
-        elif pin <= 48:
+
+        elif gpio <= 16:
+            pin = gpio - 1
+            self.pins1to16.pin(pin, mode)
+
+        elif gpio <= 32:
+            pin = gpio - 17
+            self.pins17to32.pin(pin, mode)
+
+        # Local Pins
+        elif gpio <= 46:
+            if mode == 1:
+                pin_mode = machine.Pin.IN
+            elif mode == 0:
+                pin_mode = machine.Pin.OUT
+            else:
+                return
+
+            self.local_pins[gpio].mode(pin_mode)
+
+        # Don't need to handle setting the mode for the ADC Pins
+        elif gpio == 47 or gpio == 48:
             return
-            # TODO: allow for modification of local DIO
-        elif pin <= 64:
-            self.pins33to48.set_pin_mode(pin - 48, mode)
+
+        elif gpio < 64:
+            pin = gpio - 49
+            self.pins49to64.pin(pin, mode)
+
         else:
             return
 
-    def digital_write(self, pin: int, value: int) -> None:
-        if pin < 0:
-            return
-        elif pin <= 16:
-            self.pins1to16.digital_write(pin, value)
-        elif pin <= 32:
-            self.pins17to32.digital_write(pin - 16, value)
-        elif pin <= 48:
-            return
-            # TODO: allow for modification of local DIO
-        elif pin <= 64:
-            self.pins33to48.digital_write(pin - 48, value)
-        else:
-            return
+    # # TODO: figure out if this method is needed or not
+    # def digital_write(self, pin: int, value: int) -> None:
+    #     if pin < 0:
+    #         return
+    #     elif pin <= 16:
+    #         self.pins1to16.digital_write(pin, value)
+    #     elif pin <= 32:
+    #         self.pins17to32.digital_write(pin - 16, value)
+    #     elif pin <= 48:
+    #         return
+    #         # TODO: allow for modification of local DIO
+    #     elif pin <= 64:
+    #         self.pins49to64.digital_write(pin - 48, value)
+    #     else:
+    #         return
 
-    def digital_read(self, pin: int) -> int:
-        if pin < 0:
+    def digital_read(self, gpio: int) -> int:
+        if gpio <= 0:
             return 0
-        elif pin <= 16:
-            self.pins1to16.digital_read(pin)
-        elif pin <= 32:
-            self.pins17to32.digital_read(pin - 16)
-        elif pin <= 48:
+        elif gpio <= 16:
+            pin = gpio - 1
+            self.pins1to16[pin].value()
+        elif gpio <= 32:
+            pin = gpio - 17
+            self.pins17to32[pin].value()
+        elif gpio <= 48:
             return 0
             # TODO: allow for modification of local DIO
-        elif pin <= 64:
-            self.pins33to48.digital_read(pin - 48)
+        elif gpio <= 64:
+            pin = gpio - 48
+            self.pins49to64[pin].value()
         else:
             return 0
 
     # ---- Analog Pin Logic --------------------------------------------------------------------------------------------
 
-    def analog_read(self, pin: int) -> int:
-        if pin in (47, 48):
-            # TODO: Handle reading internal ADC Pins
-            return 0
+    def analog_read(self, gpio: int) -> int:
+        if gpio in (47, 48):
+            self.local_pins[gpio].read_u16()
 
-        return self.adc.read(pin)
-
-    def analog_write(self, pin: int, value: int) -> None:
-        if pin in (47, 48):
-            # TODO: Handle writing internal ADC Pins
-            return
-
-        self.adc.write(pin, value)
+        return self.adc.read(gpio)
 
     # ---- Event Handling Logic ----------------------------------------------------------------------------------------
 
