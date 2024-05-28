@@ -201,25 +201,28 @@ class PinManager:
                 pub.sendMessage(self._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin), new_value)
                 # TODO: Run notification event
 
-    def sub_digital_rising(self, pin: int, listener: Callable) -> None:
+    @staticmethod
+    def sub_digital_rising(pin: int, listener: Callable) -> None:
         """
         Attach a callback to the digital pin. When a state change occurs, run the stored callbacks for that pin.
         """
-        pub.subscribe(self._pin_event_name(PinManager.Event.DIGITAL_RISING, pin), listener)
+        pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.DIGITAL_RISING, pin))
 
-    def sub_digital_falling(self, pin: int, listener: Callable) -> None:
+    @staticmethod
+    def sub_digital_falling(pin: int, listener: Callable) -> None:
         """
         Attach a callback to the pin manager. When a state change occurs on any pin, run the stored callbacks for that
         pin.
         """
-        pub.subscribe(self._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin), listener)
+        pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin))
 
-    def on_analog_change(self, pin: int, listener: Callable) -> None:
+    @staticmethod
+    def sub_analog_change(pin: int, listener: Callable) -> None:
         """
         Attach a callback to the analog pin. When a state change occurs on any digital pin, run the stored callbacks for
         that pin.
         """
-        pub.subscribe(self._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin), listener)
+        pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin))
 
     @staticmethod
     def _pin_event_name(event: Event, pin: int) -> str:
