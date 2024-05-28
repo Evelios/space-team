@@ -1,20 +1,11 @@
-from tests import stability_display, lcd_basic, ping_pong, i2c_pullup
+# from tests import lcd_basic, ping_pong, i2c_pullup, vibration_motor, stability_display
+from spaceteam import SpaceTeam
 
 print(f"""
       Running Space Team
       ------------------
       """)
 
-
-def main():
-    i2c_pullup.main()
-
-
-def all_tests():
-    lcd_basic.main()
-    stability_display.main()
-    ping_pong.main()
-
-
 if __name__ == "__main__":
-    main()
+    app = SpaceTeam()
+    app.run()
