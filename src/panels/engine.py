@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from machine import Pin, I2C
+from machine import I2C
 
 from hardware.pin_manager import PinManager
 
@@ -16,15 +16,15 @@ class FuelCell:
         OFF = auto()
         FAULT = auto()
 
-    def __init__(self, pinmanager: PinManager, on_off_pin: int, cycle_pin: int):
-        self.pinmanager = pinmanager
+    def __init__(self, pin_manager: PinManager, on_off_pin: int, cycle_pin: int):
+        self.pin_manager = pin_manager
         self.on_off_pin = on_off_pin
         self.cycle_pin = cycle_pin
         self.state = FuelCell.State.OFF
 
         # Setup event triggers for the on/off switch and the cycle engine button
-        pinmanager.on_digital_change(self.on_off_pin, self.on_off_pin_changed)
-        pinmanager.on_digital_change(self.on_off_pin, self.cycle_pin_changed)
+        pin_manager.on_digital_change(self.on_off_pin, self.on_off_pin_changed)
+        pin_manager.on_digital_change(self.on_off_pin, self.cycle_pin_changed)
 
     def on_off_pin_changed(self, on_off_pin_state: int) -> None:
         """

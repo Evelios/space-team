@@ -1,5 +1,6 @@
 import machine
 from typing import Dict, Union
+from enum import Enum, auto
 
 from .mcp23017 import MCP23017
 from .adcmux import AdcMux
@@ -12,6 +13,11 @@ class PinManager:
     manager takes care of routing communication through the digital and analog input/output expander chips.
     """
 
+    class Event(Enum):
+        DIGITAL_RISING = auto()
+        DIGITAL_FALLING = auto()
+        ANALOG_CHANGE = auto()
+
     def __init__(self, i2c: machine.I2C):
         self.i2c = i2c
 
@@ -23,17 +29,13 @@ class PinManager:
 
         # Sampling for reading pin inputs and monitoring for changes
         self._sample_rate = 50  # ms
-        self.sample_timer = machine.Timer(period=self._sample_rate, callback=self.sample_pins)
+        self.sample_timer = machine.Timer(period=self._sample_rate, callback=self._sample_pins)
 
-        # Initialize a dictionary of previous digital pin states
+        # Initialize a dictionary of previous digital and analog pin states
         self.digital_pins = {key: 0 for key in range(1, 65)}
-        self.digital_callbacks = {}
-        self.digital_callbacks_any_pin = []
-
-        # Initialize a dictionary of previous analog pin states
         self.analog_pins = {key: 0.0 for key in range(1, 17)}
-        self.analog_callbacks = {}
-        self.analog_callbacks_any_pin = []
+
+        self.event_manager = EventManager()
 
     # ---- Private Methods ---------------------------------------------------------------------------------------------
     def _init_local_io(self):
@@ -137,7 +139,7 @@ class PinManager:
 
     # ---- Event Handling Logic ----------------------------------------------------------------------------------------
 
-    def sample_pins(self):
+    def _sample_pins(self):
         """
         Sample the digital and analog pins. This pin sampling will happen on a periodic cycle. If any pins have state
         changes, all callbacks associated with a pin will be called.
@@ -156,14 +158,7 @@ class PinManager:
             # If a new value is read, update the current value stored and run any stored callbacks
             elif new_value != self.digital_pins[pin]:
                 self.digital_pins[pin] = new_value
-
-                # Run all callback functions on pin changes
-                if pin in self.digital_callbacks:
-                    for callback in self.digital_callbacks[pin]:
-                        callback(new_value)
-
-                    for callback in self.digital_callbacks_any_pin:
-                        callback(pin, new_value)
+                # TODO: Run notification event
 
     def _sample_analog_pins(self):
         for pin in range(1, 17):
@@ -176,44 +171,28 @@ class PinManager:
             # If a new value is read, update the current value stored and run any stored callbacks
             elif new_value != self.analog_pins[pin]:
                 self.analog_pins[pin] = new_value
-
-                # Run all callback functions on pin changes
-                if pin in self.analog_callbacks:
-                    for callback in self.analog_callbacks[pin]:
-                        callback(new_value)
-
-                    for callback in self.analog_callbacks_any_pin:
-                        callback(pin, new_value)
+                # TODO: Run notification event
 
     def on_digital_change(self, pin: int, callback):
         """
         Attach a callback to the digital pin. When a state change occurs, run the stored callbacks for that pin.
         """
-        if pin not in self.digital_callbacks:
-            self.digital_callbacks[pin] = []
-
-        self.digital_callbacks[pin].append(callback)
+        self.event_manager.subscribe(PinManager.Event.DIGITAL_RISING)
 
     def on_any_digital_change(self, callback):
         """
         Attach a callback to the pin manager. When a state change occurs on any pin, run the stored callbacks for that
         pin.
         """
-        self.digital_callbacks_any_pin.append(callback)
 
     def on_analog_change(self, pin: int, callback):
         """
         Attach a callback to the analog pin. When a state change occurs on any digital pin, run the stored callbacks for
         that pin.
         """
-        if pin not in self.analog_callbacks:
-            self.analog_callbacks[pin] = []
-
-        self.analog_callbacks[pin].append(callback)
 
     def on_any_analog_change(self, callback):
         """
         Attach a callback to the pin manager. When a state change occurs on any analog pin, run the stored callbacks for
         that pin.
         """
-        self.analog_callbacks_any_pin.append(callback)

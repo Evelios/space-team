@@ -22,7 +22,7 @@ def main():
     for device in devices:
         print("Decimal address: ", device, " | Hexa address: ", hex(device))
 
-    stability = Stability(i2c, i2c_addr=devices[0], pin1=21, pin2=20, pin3=19, pin4=18)
+    stability = Stability(i2c, i2c_addr=devices[0])
     stability.position = 0
 
     direction = 1
