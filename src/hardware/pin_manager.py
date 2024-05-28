@@ -1,10 +1,10 @@
-import machine
-from typing import Dict, Union
+from typing import Dict, Union, Callable
 from enum import Enum, auto
+import machine
+import pubsub as pub
 
 from .mcp23017 import MCP23017
 from .adcmux import AdcMux
-from events.event_manager import EventManager
 
 
 class PinManager:
@@ -35,15 +35,13 @@ class PinManager:
         self.digital_pins = {key: 0 for key in range(1, 65)}
         self.analog_pins = {key: 0.0 for key in range(1, 17)}
 
-        self.event_manager = EventManager()
-
     # ---- Private Methods ---------------------------------------------------------------------------------------------
     def _init_local_io(self):
         for gpio in range(33, 42 + 1):
             pin = gpio - 27  # Pin offset for the first section of IO pins
             self.local_pins[gpio] = machine.Pin(pin, mode=machine.Pin.IN, pull=machine.Pin.PULL_UP)
 
-        for gpio in range(43, 45):
+        for gpio in range(43, 47):
             pin = 64 - gpio  # Pin offset for the second section of IO pins
             self.local_pins[gpio] = machine.Pin(pin, mode=machine.Pin.IN, pull=machine.Pin.PULL_UP)
 
@@ -55,9 +53,9 @@ class PinManager:
 
     # ---- Digital Pin Logic -------------------------------------------------------------------------------------------
 
-    # Set the pin mode of a pin on the chip
     def set_pin_mode(self, gpio: int, mode: int) -> None:
         """
+        Set the pin mode of a pin on the chip
 
         :param gpio: Pin number for GPIO 1 -> 64
         :param mode: 1 = input pin, 0 = output pin
@@ -112,30 +110,54 @@ class PinManager:
     #         return
 
     def digital_read(self, gpio: int) -> int:
+        """
+        Read a digital pin and return the value at that gpio output. This gets the current value from the pin and
+        doesn't run any internal logic to detect pin state changes, nor does it fire off events.
+
+        :param gpio: The GPIO pin from the module
+        :return: The pin value 0 - Low, 1 - High
+        """
         if gpio <= 0:
             return 0
+
         elif gpio <= 16:
             pin = gpio - 1
-            self.pins1to16[pin].value()
+            return self.pins1to16[pin].value()
+
         elif gpio <= 32:
             pin = gpio - 17
-            self.pins17to32[pin].value()
+            return self.pins17to32[pin].value()
+
+        elif gpio <= 46:
+            return self.local_pins[gpio].value()
+
+        # Analog pins don't have a digital read value
         elif gpio <= 48:
             return 0
-            # TODO: allow for modification of local DIO
+
         elif gpio <= 64:
             pin = gpio - 48
-            self.pins49to64[pin].value()
+            return self.pins49to64[pin].value()
+
         else:
             return 0
 
     # ---- Analog Pin Logic --------------------------------------------------------------------------------------------
 
     def analog_read(self, gpio: int) -> int:
+        """
+        Read the analog value from the
+
+        :param gpio: The GPIO pin location of the analog read pins
+        :return: Analog value from the ADC as an unsigned 16-bit integer
+        """
         if gpio in (47, 48):
             self.local_pins[gpio].read_u16()
 
-        return self.adc.read(gpio)
+        if gpio in range(1, 17):
+            return self.adc.read(gpio)
+
+        return 0
 
     # ---- Event Handling Logic ----------------------------------------------------------------------------------------
 
@@ -158,7 +180,12 @@ class PinManager:
             # If a new value is read, update the current value stored and run any stored callbacks
             elif new_value != self.digital_pins[pin]:
                 self.digital_pins[pin] = new_value
-                # TODO: Run notification event
+
+                # Send the message for either the Digital Rising or Falling event
+                if new_value == 0:
+                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_RISING, pin), new_value)
+                else:
+                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin), new_value)
 
     def _sample_analog_pins(self):
         for pin in range(1, 17):
@@ -171,28 +198,33 @@ class PinManager:
             # If a new value is read, update the current value stored and run any stored callbacks
             elif new_value != self.analog_pins[pin]:
                 self.analog_pins[pin] = new_value
+                pub.sendMessage(self._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin), new_value)
                 # TODO: Run notification event
 
-    def on_digital_change(self, pin: int, callback):
+    def sub_digital_rising(self, pin: int, listener: Callable) -> None:
         """
         Attach a callback to the digital pin. When a state change occurs, run the stored callbacks for that pin.
         """
-        self.event_manager.subscribe(PinManager.Event.DIGITAL_RISING)
+        pub.subscribe(self._pin_event_name(PinManager.Event.DIGITAL_RISING, pin), listener)
 
-    def on_any_digital_change(self, callback):
+    def sub_digital_falling(self, pin: int, listener: Callable) -> None:
         """
         Attach a callback to the pin manager. When a state change occurs on any pin, run the stored callbacks for that
         pin.
         """
+        pub.subscribe(self._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin), listener)
 
-    def on_analog_change(self, pin: int, callback):
+    def on_analog_change(self, pin: int, listener: Callable) -> None:
         """
         Attach a callback to the analog pin. When a state change occurs on any digital pin, run the stored callbacks for
         that pin.
         """
+        pub.subscribe(self._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin), listener)
 
-    def on_any_analog_change(self, callback):
+    @staticmethod
+    def _pin_event_name(event: Event, pin: int) -> str:
         """
-        Attach a callback to the pin manager. When a state change occurs on any analog pin, run the stored callbacks for
-        that pin.
+        Get the string representation of the event on a particular pin. The event name is needed as a string for the\
+        PyPubSub class which handles the observer pattern for the PinManager.
         """
+        return f"{event}_{pin}"
