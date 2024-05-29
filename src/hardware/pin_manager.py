@@ -1,7 +1,7 @@
-from typing import Dict, Union, Callable
 from enum import Enum, auto
+from pubsub import pub
+from typing import Dict, Union, Callable
 import machine
-import pubsub as pub
 
 from .mcp23017 import MCP23017
 from .adcmux import AdcMux
@@ -16,6 +16,7 @@ class PinManager:
     class Event(Enum):
         DIGITAL_RISING = auto()
         DIGITAL_FALLING = auto()
+        DIGITAL_CHANGE = auto()
         ANALOG_CHANGE = auto()
 
     def __init__(self, i2c: machine.I2C):
@@ -93,21 +94,36 @@ class PinManager:
         else:
             return
 
-    # # TODO: figure out if this method is needed or not
-    # def digital_write(self, pin: int, value: int) -> None:
-    #     if pin < 0:
-    #         return
-    #     elif pin <= 16:
-    #         self.pins1to16.digital_write(pin, value)
-    #     elif pin <= 32:
-    #         self.pins17to32.digital_write(pin - 16, value)
-    #     elif pin <= 48:
-    #         return
-    #         # TODO: allow for modification of local DIO
-    #     elif pin <= 64:
-    #         self.pins49to64.digital_write(pin - 48, value)
-    #     else:
-    #         return
+    def digital_write(self, gpio: int, value: int) -> None:
+        """
+        Write to a digital GPIO pin.
+        :param gpio:
+        :param value:
+        """
+        if gpio < 0:
+            return
+
+        elif gpio <= 16:
+            pin = gpio - 1
+            self.pins1to16[pin].value(value)
+
+        elif gpio <= 32:
+            pin = gpio - 17
+            self.pins17to32[pin].value(value)
+
+        elif gpio <= 46:
+            self.local_pins[gpio].value(value)
+
+        # Cannot write to the two analog pins
+        elif gpio <= 48:
+            return
+
+        elif gpio <= 64:
+            pin = gpio - 49
+            self.pins49to64[pin].value(value)
+
+        else:
+            return
 
     def digital_read(self, gpio: int) -> int:
         """
@@ -183,9 +199,15 @@ class PinManager:
 
                 # Send the message for either the Digital Rising or Falling event
                 if new_value == 0:
-                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_RISING, pin), new_value)
+                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_RISING, pin), pin=pin,
+                                    value=new_value)
+                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_CHANGE, pin), pin=pin,
+                                    value=new_value)
                 else:
-                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin), new_value)
+                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin), pin=pin,
+                                    value=new_value)
+                    pub.sendMessage(self._pin_event_name(PinManager.Event.DIGITAL_CHANGE, pin), pin=pin,
+                                    value=new_value)
 
     def _sample_analog_pins(self):
         for pin in range(1, 17):
@@ -198,23 +220,30 @@ class PinManager:
             # If a new value is read, update the current value stored and run any stored callbacks
             elif new_value != self.analog_pins[pin]:
                 self.analog_pins[pin] = new_value
-                pub.sendMessage(self._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin), new_value)
-                # TODO: Run notification event
+                pub.sendMessage(self._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin), pin=pin, value=new_value)
 
     @staticmethod
     def sub_digital_rising(pin: int, listener: Callable) -> None:
         """
-        Attach a callback to the digital pin. When a state change occurs, run the stored callbacks for that pin.
+        Attach a callback to the digital pin. When a state changes to high, run the stored callbacks for that pin.
         """
         pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.DIGITAL_RISING, pin))
 
     @staticmethod
     def sub_digital_falling(pin: int, listener: Callable) -> None:
         """
-        Attach a callback to the pin manager. When a state change occurs on any pin, run the stored callbacks for that
+        Attach a callback to the pin manager. When a state change to low, run the stored callbacks for that
         pin.
         """
         pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.DIGITAL_FALLING, pin))
+
+    @staticmethod
+    def sub_digital_change(pin: int, listener: Callable) -> None:
+        """
+        Attach a callback to the pin manager. When a state change occurs on any pin, run the stored callbacks for that
+        pin.
+        """
+        pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.DIGITAL_CHANGE, pin))
 
     @staticmethod
     def sub_analog_change(pin: int, listener: Callable) -> None:
