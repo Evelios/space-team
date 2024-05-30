@@ -1,4 +1,7 @@
-from machine import Pin
+from typing import Callable
+from pubsub import pub
+
+from hardware.pin_manager import PinManager
 
 
 def inverse(x):
@@ -14,12 +17,12 @@ class RotaryEncoder:
     gears to change the signal. This encoder is going to need some debouncing
     to make sure that the signal doesn't get noisy when sampled.
     """
-    p1: Pin
-    p2: Pin
-    p3: Pin
-    p4: Pin
+    p1: int
+    p2: int
+    p3: int
+    p4: int
     position: int
-    callbacks: list
+    encoded_bits: [int]
 
     def __init__(self, p1: int, p2: int, p3: int, p4: int):
         """
@@ -30,12 +33,18 @@ class RotaryEncoder:
         :param p3: Pin position 3
         :param p4: Pin position 4 (LSB)
         """
-        self.p1 = Pin(p1, mode=Pin.IN, pull=Pin.PULL_UP)
-        self.p2 = Pin(p2, mode=Pin.IN, pull=Pin.PULL_UP)
-        self.p3 = Pin(p3, mode=Pin.IN, pull=Pin.PULL_UP)
-        self.p4 = Pin(p4, mode=Pin.IN, pull=Pin.PULL_UP)
+
+        self.p1 = p1
+        self.p2 = p2
+        self.p3 = p3
+        self.p4 = p4
+        self.encoded_bits = [0, 0, 0, 0]
         self.position = 0
-        self.callbacks = []
+
+        PinManager.sub_digital_change(self.p1, self._on_pin_change)
+        PinManager.sub_digital_change(self.p2, self._on_pin_change)
+        PinManager.sub_digital_change(self.p3, self._on_pin_change)
+        PinManager.sub_digital_change(self.p4, self._on_pin_change)
 
     def read(self) -> int:
         """
@@ -46,28 +55,42 @@ class RotaryEncoder:
 
         :return: The current position of the rotary encoder from 0 to 15
         """
-        encoding = inverse(self.p1.value())
-        for pin in [self.p2, self.p3, self.p4]:
-            encoding = encoding << 1 + inverse(pin.value())
+        # TODO: need to fill out immediate read
+        return self.position
 
-        return encoding
+    # ---- Event Handling ----------------------------------------------------------------------------------------------
 
-    def update(self):
-        reading = self.read()
+    def _on_pin_change(self, pin: int, value: int) -> None:
+        # We need to take the inverse of the pin value because 0 indicates an active state
+        pin_encoding = inverse(value)
+        match pin:
+            case self.p1:
+                self.encoded_bits[0] = pin_encoding
+            case self.p2:
+                self.encoded_bits[1] = pin_encoding
+            case self.p3:
+                self.encoded_bits[2] = pin_encoding
+            case self.p4:
+                self.encoded_bits[3] = pin_encoding
+            case _:
+                print(f'RotaryEncoder: Pin change on an invalid pin "{pin}" with value "{value}"')
 
-        if reading != self.position:
-            self.position = reading
+        # Calculate the new encoder value
+        encoder_value = 0
+        for pin in self.encoded_bits:
+            encoder_value = encoder_value << 1 + pin
 
-            for callback in self.callbacks:
-                callback()
+        if encoder_value != self.position:
+            self.position = encoder_value
+            pub.sendMessage(self._change_event_name(), value=self.position)
 
-    # ---- Events ----
+    # ---- Subscriptions -----------------------------------------------------------------------------------------------
 
-    def on_change(self, callback) -> None:
+    def sub_encoder_change(self, listener: Callable[[int], None]) -> None:
         """
-        :param callback: Function that gets called when the rotary encoder changes value.
-        ```
-        () -> None
-        ```
+        :param listener:
         """
-        self.callbacks.append(callback)
+        pub.subscribe(listener, self._change_event_name())
+
+    def _change_event_name(self):
+        return f'RotaryEncoder_{self.p1}_{self.p2}_{self.p3}_{self.p4}.ENCODER_CHANGE'
