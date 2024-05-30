@@ -8,6 +8,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Sphinx Build Files
+_build/
+_static/
+docs/
+
 # Distribution / packaging
 .Python
 env/

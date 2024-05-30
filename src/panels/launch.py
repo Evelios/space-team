@@ -24,6 +24,7 @@ class Launch:
         self.mileage_pin = 37
 
         self.difficulty_pins = list(range(41, 47))
+        self.difficulty = 0
 
         PinManager.sub_digital_change(self.key_pin, self._on_key_toggle)
         PinManager.sub_digital_change(self.estop_pin, self._on_estop_toggle)
@@ -55,25 +56,48 @@ class Launch:
         # The button is N/O and pulled high when open, the button is active low
         pub.sendMessage(str(Launch.Event.START_BUTTON_PRESSED))
 
-    @staticmethod
-    def _on_difficulty_pin_change(pin: int, value: int):
+    def _on_difficulty_pin_change(self, pin: int, value: int):
         # TODO: fill out difficulty calculation logic
-        pub.sendMessage(str(Launch.Event.DIFFICULTY_CHANGED))
+        self.difficulty = 0
+        pub.sendMessage(str(Launch.Event.DIFFICULTY_CHANGED), self.difficulty)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
 
     @staticmethod
-    def sub_key_toggle(listener: Callable):
+    def sub_key_toggle(listener: Callable[[int], None]) -> None:
+        """
+        Subscribe to the start key outlet being turned on or off.
+
+        :param listener: Callback function taking the following arguments.
+            - `state` (`SwitchState`): Current state of the switch
+        """
         pub.subscribe(listener, str(Launch.Event.KEY_TOGGLE))
 
     @staticmethod
-    def sub_estop_toggle(listener: Callable):
+    def sub_estop_toggle(listener: Callable[[states.Switch], None]) -> None:
+        """
+        Subscribe to the estop button being engaged (pressed) or disengaged (released)
+
+        :param listener: Callback function taking the following arguments.
+            - `state` (`Switch`): Current state of the switch
+        """
         pub.subscribe(listener, str(Launch.Event.ESTOP_TOGGLE))
 
     @staticmethod
-    def sub_start_pressed(listener: Callable):
+    def sub_start_button_pressed(listener: Callable[[], None]) -> None:
+        """
+        Subscribe to the start button being pressed.
+
+        :param listener: Callback function taking no arguments.
+        """
         pub.subscribe(listener, str(Launch.Event.START_BUTTON_PRESSED))
 
     @staticmethod
-    def sub_difficulty_change(listener: Callable):
+    def sub_difficulty_change(listener: Callable[[int], None]) -> None:
+        """
+        Subscribe to the start button being pressed.
+
+        :param listener: Callback function taking the following arguments.
+            - `difficulty` (`int`): Current difficulty from the launch panel
+        """
         pub.subscribe(listener, str(Launch.Event.DIFFICULTY_CHANGED))

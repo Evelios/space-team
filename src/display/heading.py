@@ -1,5 +1,5 @@
-from machine import Pin
-from neopixel import NeoPixel
+# from machine import Pin
+# from neopixel import NeoPixel
 
 
 class Heading:
@@ -11,7 +11,8 @@ class Heading:
         :param din: Data pin for the 8x8 led matrix
         """
         self.din = din
-        self.np = NeoPixel(Pin(din), self.LEDS)
+        # self.np = NeoPixel(Pin(din), self.LEDS)
 
     def display(self):
-        self.np.fill((255, 0, 0))
+        # self.np.fill((255, 0, 0))
+        pass
