@@ -70,9 +70,25 @@ class FuelCell:
         """
         pub.subscribe(listener, FuelCell._event_name(FuelCell.Event.TURNED_ON, self.on_off_pin))
 
+    def unsub_turned_on(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to when the Fuel Cell is turned on.
+
+        :param listener: Callable that takes no arguments
+        """
+        pub.unsubscribe(listener, FuelCell._event_name(FuelCell.Event.TURNED_ON, self.on_off_pin))
+
     def sub_turned_off(self, listener: Callable[[], None]) -> None:
         """
         Subscribe to when the Fuel Cell is turned off.
+
+        :param listener: Callable that takes no arguments
+        """
+        pub.subscribe(listener, FuelCell._event_name(FuelCell.Event.TURNED_OFF, self.on_off_pin))
+
+    def unsub_turned_off(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to when the Fuel Cell is turned off.
 
         :param listener: Callable that takes no arguments
         """
@@ -86,13 +102,29 @@ class FuelCell:
         """
         pub.subscribe(listener, FuelCell._event_name(FuelCell.Event.FAULTED, self.on_off_pin))
 
+    def unsub_faulted(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to when the Fuel Cell is faulted.
+
+        :param listener: Callable that takes no arguments
+        """
+        pub.unsubscribe(listener, FuelCell._event_name(FuelCell.Event.FAULTED, self.on_off_pin))
+
     def sub_cleared_fault(self, listener: Callable[[], None]) -> None:
         """
         Subscribe to when the Fuel Cell fault is cleared
 
         :param listener: Callable that takes no arguments
         """
-        pub.subscribe(listener, FuelCell._event_name(FuelCell.Event.CLEARED_FAULT, self.on_off_pin))
+        pub.subscribe(listener, FuelCell._event_name(FuelCell.Event.CLEARED_FAULT, self.cycle_pin))
+
+    def unsub_cleared_fault(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to when the Fuel Cell fault is cleared
+
+        :param listener: Callable that takes no arguments
+        """
+        pub.unsubscribe(listener, FuelCell._event_name(FuelCell.Event.CLEARED_FAULT, self.cycle_pin))
 
     @staticmethod
     def _event_name(event: Event, event_id: int) -> str:
