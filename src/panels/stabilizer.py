@@ -16,12 +16,13 @@ class Stabilizer:
         UNSTABLE = auto()
         CRASH = auto()
 
-    stability = 0
+    stability: float = 0
     """Stability of this device. Range -1 -> 1"""
 
-    rotary_encoder = RotaryEncoder
+    rotary_encoder: RotaryEncoder
     """stabilizer_input"""
-    previous_reading = 0
+
+    previous_reading: float = 0
 
     def __init__(self, i2c: I2C, p1: int, p2: int, p3: int, p4: int):
         self.i2c = i2c
