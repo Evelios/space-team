@@ -1,8 +1,8 @@
 import machine
 
 from hardware.pin_manager import PinManager
-from logging.pin_logger import PinLogger
-from logging.log import Log
+from loggers.pin_logger import PinLogger
+from loggers.log import Log
 
 
 class SpaceTeam:

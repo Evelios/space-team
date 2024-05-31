@@ -1,5 +1,5 @@
 import machine
-import utime
+import time
 from display.lcd_pico import I2cLcd
 from util import clamp, remap
 
@@ -97,7 +97,7 @@ class Stability:
 
     def __init__(self, i2c: machine.I2C, i2c_addr: int):
         self.lcd = I2cLcd(i2c=i2c, i2c_addr=i2c_addr, num_lines=self.ROWS, num_columns=self.COLS)
-        utime.sleep_ms(100)
+        time.sleep_ms(100)
         self.__custom_characters()
         self._position = 0
 
