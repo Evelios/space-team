@@ -41,9 +41,7 @@ class Button:
     def on_change(self, _: Pin):
         """
         Update the button state with the value on the pin.
-        :param _:
-            Pin that is being changed. This is the same as `self.pin` so
-            we are ignoring the input value
+        :param _: Pin that is being changed. This is the same as `self.pin` so we are ignoring the input value
         """
         reading = self.pin.value()
 
