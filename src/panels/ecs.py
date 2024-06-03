@@ -195,5 +195,5 @@ class ECS:
         pub.unsubscribe(listener, self._cabin_pressure_event())
 
     @staticmethod
-    def _event_name(event: Event, pin: int):
+    def _event_name(event: Event, pin: int) -> str:
         return f'{event}_{pin}'

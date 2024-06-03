@@ -31,22 +31,17 @@ class Stabilizer:
         self.p3 = p3
         self.p4 = p4
         self.rotary_encoder = RotaryEncoder(p1, p2, p3, p4)
-
-    def update(self):
-        encoder_reading = self.rotary_encoder.read()
-
-        if encoder_reading == self.previous_reading:
-            return
-
-        self.stability += self.previous_reading - encoder_reading
-        self.previous_reading = encoder_reading
+        self.rotary_encoder.sub_encoder_change(self._on_encoder_change)
 
     # ---- Event Handling ----------------------------------------------------------------------------------------------
 
     def _on_encoder_change(self, value: int):
-        pass
+        pub.sendMessage(self._stabilizer_event(), value=value)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
+
+    def _stabilizer_event(self) -> str:
+        return self._event_name(Stabilizer.Event.POSITION_CHANGE, self.p1)
 
     def sub_stabilizer_change(self, listener: Callable[[float], None]) -> None:
         """
@@ -55,8 +50,7 @@ class Stabilizer:
         :param listener: Callback function taking the following arguments.
             - `value` (`float`): Current stabilizer value
         """
-        event_name = self._event_name(Stabilizer.Event.POSITION_CHANGE, self.p1)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._stabilizer_event)
 
     def unsub_stabilizer_change(self, listener: Callable[[float], None]) -> None:
         """
@@ -65,8 +59,7 @@ class Stabilizer:
         :param listener: Callback function taking the following arguments.
             - `value` (`float`): Current stabilizer value
         """
-        event_name = self._event_name(Stabilizer.Event.POSITION_CHANGE, self.p1)
-        pub.unsubscribe(listener, event_name)
+        pub.unsubscribe(listener, self._stabilizer_event)
 
     def sub_stabilizer_unstable(self, listener) -> None:
         """

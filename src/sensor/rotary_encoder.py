@@ -88,9 +88,21 @@ class RotaryEncoder:
 
     def sub_encoder_change(self, listener: Callable[[int], None]) -> None:
         """
-        :param listener:
+        Subscribe to the encode value changing.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`int`): Current value of the encoder
         """
         pub.subscribe(listener, self._change_event_name())
+
+    def unsub_encoder_change(self, listener: Callable[[int], None]) -> None:
+        """
+        Subscribe to the encode value changing.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`int`): Current value of the encoder
+        """
+        pub.unsubscribe(listener, self._change_event_name())
 
     def _change_event_name(self):
         return f'RotaryEncoder_{self.p1}_{self.p2}_{self.p3}_{self.p4}.ENCODER_CHANGE'
