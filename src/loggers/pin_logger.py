@@ -5,6 +5,8 @@ from hardware.pin_manager import PinManager
 class PinLogger:
 
     def __init__(self):
+        Log.info('Pin Logger initialized. Watching 62 Digital Pins & 18 Analog Pins.')
+
         for pin in range(1, 65):
             PinManager.sub_digital_rising(pin, PinLogger.on_digital_change)
 
@@ -17,7 +19,7 @@ class PinLogger:
 
     @staticmethod
     def on_digital_change(pin: int) -> None:
-        Log.debug(f"Digital Change on Pin: {pin}")
+        Log.debug(f'Digital Change on Pin: {pin}')
 
     @staticmethod
     def on_analog_change(pin: int, value: int) -> None:

@@ -14,7 +14,7 @@ class SpaceTeam:
         scl = 17
         freq = 400000
         self.i2c = machine.I2C(0, sda=machine.Pin(sda), scl=machine.Pin(scl), freq=freq)
-        Log.debug(f"Initialized I2C with SDA:{sda}, SCL:{scl}, at Frequency:{freq}")
+        Log.info(f'Initialized I2C with SDA:{sda}, SCL:{scl}, at Frequency:{freq}')
 
         self.pin_manager = PinManager(self.i2c)
         self.pin_logger = PinLogger()
