@@ -37,6 +37,10 @@ class FlightControl:
         JOYSTICK_MOVE = auto()
 
     def __init__(self):
+        # ---- Class Values ----
+        self.x_axis = 0  # Range 0 - 1
+        self.y_axis = 0  # Range 0 - 1
+
         # ---- Pin Assignments ----
         self._track_jam_pin = 5
         self._auto_cycle_start_pin = 6
@@ -64,8 +68,6 @@ class FlightControl:
         self.one_button = states.Button.RELEASED
         self.two_button = states.Button.RELEASED
         self.y_axis_invert = states.Button.RELEASED
-        self.x_axis = 0
-        self.y_axis = 0
 
         # ---- Pin Change Event Subscriptions ----
         PinManager.sub_digital_change(self._track_jam_pin, self._on_digital_change)
@@ -91,6 +93,51 @@ class FlightControl:
         :param pin:
         :param value:
         """
+        button_state = states.Button.PRESSED if value == 0 else states.Button.RELEASED
+
+        match pin:
+            case self._track_jam_pin:
+                self.track_jam = button_state
+                pub.sendMessage(self._track_jam_event())
+
+            case self._auto_cycle_start_pin:
+                self.auto_cycle_start = button_state
+                pub.sendMessage(self._auto_cycle_start_event())
+
+            case self._split_normal_pin:
+                self.split_normal = button_state
+                pub.sendMessage(self._split_normal_event())
+
+            case self._auto_manual_pin:
+                self.auto_manual = button_state
+                pub.sendMessage(self._auto_manual_event())
+
+            case self._warp_drive_pin:
+                self.warp_drive = button_state
+                pub.sendMessage(self._warp_drive_event())
+
+            case self._thruster_left_pin:
+                self.thruster_left = button_state
+                pub.sendMessage(self._rcs_thruster_event(), direction=-1)
+            case self._thruster_right_pin:
+                self.thruster_right = button_state
+                pub.sendMessage(self._rcs_thruster_event(), direction=-1)
+
+            case self._stop_button_pin:
+                self.stop_button = button_state
+                pub.sendMessage(self._stop_button_event())
+
+            case self._one_button_pin:
+                self.one_button = button_state
+                pub.sendMessage(self._one_button_event())
+
+            case self._two_button_pin:
+                self.two_button = button_state
+                pub.sendMessage(self._two_button_event())
+
+            case self._y_axis_invert_pin:
+                self.y_axis_invert = button_state
+                pub.sendMessage(self._y_axis_invert_event())
 
     def _on_analog_change(self, pin: int, value: int) -> None:
         """
@@ -99,14 +146,21 @@ class FlightControl:
         :param pin:
         :param value:
         """
+        normalized_value = value / 65535.
 
-    def _on_y_axis_change(self, pin: int, value: float) -> None:
-        pass
+        match pin:
+            case self._x_axis_pin:
+                self.x_axis = normalized_value
+                pub.sendMessage(self._joystick_event(), x=self.x_axis, y=self.y_axis)
 
-    def _on_x_axis_change(self, pin: int, value: float) -> None:
-        pass
+            case self._y_axis_pin:
+                self.y_axis = normalized_value
+                pub.sendMessage(self._joystick_event(), x=self.x_axis, y=self.y_axis)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
+
+    def _track_jam_event(self):
+        return self._event_name(FlightControl.Event.TRACK_JAM_PRESSED, self._track_jam_pin)
 
     def sub_track_jam_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -114,8 +168,18 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.TRACK_JAM_PRESSED, self._track_jam_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._track_jam_event())
+
+    def unsub_track_jam_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the track jam button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._track_jam_event())
+
+    def _auto_cycle_start_event(self):
+        return self._event_name(FlightControl.Event.AUTO_CYCLE_START_PRESSED, self._auto_cycle_start_pin)
 
     def sub_auto_cycle_start_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -123,8 +187,18 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.AUTO_CYCLE_START_PRESSED, self._auto_cycle_start_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._auto_cycle_start_event())
+
+    def unsub_auto_cycle_start_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the auto cycle start button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._auto_cycle_start_event())
+
+    def _split_normal_event(self):
+        return self._event_name(FlightControl.Event.AUTO_CYCLE_START_PRESSED, self._auto_cycle_start_pin)
 
     def sub_split_normal_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -132,8 +206,18 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.AUTO_CYCLE_START_PRESSED, self._auto_cycle_start_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._split_normal_event())
+
+    def unsub_split_normal_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the split normal button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._split_normal_event())
+
+    def _auto_manual_event(self):
+        return self._event_name(FlightControl.Event.AUTO_MANUAL_PRESSED, self._auto_manual_pin)
 
     def sub_auto_manual_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -141,8 +225,18 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.AUTO_MANUAL_PRESSED, self._auto_manual_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._auto_manual_event())
+
+    def unsub_auto_manual_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the auto/manual button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._auto_manual_event())
+
+    def _warp_drive_event(self):
+        return self._event_name(FlightControl.Event.WARP_DRIVE_ENGAGED, self._warp_drive_pin)
 
     def sub_warp_drive_engaged(self, listener: Callable[[], None]) -> None:
         """
@@ -150,10 +244,23 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.WARP_DRIVE_ENGAGED, self._warp_drive_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._warp_drive_event())
 
-    def sub_rcs_thruster_toggled(self, listener: Callable[[], None]) -> None:
+    def unsub_warp_drive_engaged(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the warp drive switch being engaged.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._warp_drive_event())
+
+    def _rcs_thruster_event(self):
+        return self._event_name(
+            FlightControl.Event.RCS_THRUSTER_TOGGLED,
+            self._thruster_left_pin,
+            self._thruster_right_pin)
+
+    def sub_rcs_thruster_toggled(self, listener: Callable[[int], None]) -> None:
         """
         Subscribe to rcs thruster toggle switch being moved to the left, right, or center.
 
@@ -161,21 +268,39 @@ class FlightControl:
             Callback function that takes the following arguments:
                 - `direction` (`int`): The direction of the rcs thruster (-1 for left, 0 for center, 1 for right).
         """
-        event_name = self._event_name(
-            FlightControl.Event.RCS_THRUSTER_TOGGLED,
-            self._thruster_left_pin,
-            self._thruster_right_pin)
+        pub.subscribe(listener, self._rcs_thruster_event())
 
-        pub.subscribe(listener, event_name)
+    def unsub_rcs_thruster_toggled(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to rcs thruster toggle switch being moved to the left, right, or center.
+
+        :param listener:
+            Callback function that takes the following arguments:
+                - `direction` (`int`): The direction of the rcs thruster (-1 for left, 0 for center, 1 for right).
+        """
+        pub.unsubscribe(listener, self._rcs_thruster_event())
+
+    def _stop_button_event(self):
+        return self._event_name(FlightControl.Event.STOP_BUTTON_PRESSED, self._stop_button_pin)
 
     def sub_stop_button_pressed(self, listener: Callable[[], None]) -> None:
         """
-        Subscribe to the stop button button being pressed.
+        Subscribe to the stop button being pressed.
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.STOP_BUTTON_PRESSED, self._stop_button_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._stop_button_event())
+
+    def unsub_stop_button_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the stop button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._stop_button_event())
+
+    def _one_button_event(self):
+        return self._event_name(FlightControl.Event.ONE_BUTTON_PRESSED, self._one_button_pin)
 
     def sub_one_button_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -183,8 +308,18 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.ONE_BUTTON_PRESSED, self._one_button_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._one_button_event())
+
+    def unsub_one_button_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the one button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._one_button_event())
+
+    def _two_button_event(self):
+        return self._event_name(FlightControl.Event.TWO_BUTTON_PRESSED, self._two_button_pin)
 
     def sub_two_button_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -192,8 +327,57 @@ class FlightControl:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(FlightControl.Event.TWO_BUTTON_PRESSED, self._two_button_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._two_button_event())
+
+    def unsub_two_button_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the two button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._two_button_event())
+
+    def _y_axis_invert_event(self):
+        return self._event_name(FlightControl.Event.Y_AXIS_INVERT_TOGGLED, self._y_axis_invert_pin)
+
+    def sub_y_axis_invert_toggled(self, listener: Callable[[], None]) -> None:
+        """
+        Subscribe to the y-axis invert switch being toggled.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.subscribe(listener, self._y_axis_invert_event())
+
+    def unsub_y_axis_invert_toggled(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the two button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._y_axis_invert_event())
+
+    def _joystick_event(self) -> str:
+        return self._event_name(FlightControl.Event.JOYSTICK_MOVE, self._x_axis_pin, self._y_axis_pin)
+
+    def sub_joystick_moved(self, listener: Callable[[float, float], None]) -> None:
+        """
+        Subscribe to the y-axis invert switch being toggled.
+
+        :param listener: Callback function that takes the following arguments.
+            - `x` (`float`): The x-axis value from 0 to 1
+            - `y` (`float`): The y-axis value from 0 to 1
+        """
+        pub.subscribe(listener, self._joystick_event())
+
+    def unsub_joystick_moved(self, listener: Callable[[float, float], None]) -> None:
+        """
+        Unsubscribe to the two button being pressed.
+
+        :param listener: Callback function that takes the following arguments.
+            - `x` (`float`): The x-axis value from 0 to 1
+            - `y` (`float`): The y-axis value from 0 to 1
+        """
+        pub.unsubscribe(listener, self._joystick_event())
 
     @staticmethod
     def _event_name(event: Event, pin: int, pin2: int = 0):

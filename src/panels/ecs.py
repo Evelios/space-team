@@ -14,7 +14,7 @@ class ECS:
     class CabinPressureState(Enum):
         ON = auto()
         OFF = auto()
-        TOGGLE = auto()
+        HOLD = auto()
 
     class Event(Enum):
         AIRFLOW_TOGGLE = auto()
@@ -58,8 +58,43 @@ class ECS:
         :param pin:
         :param value:
         """
+        button_state = states.Button.PRESSED if value == 0 else states.Button.RELEASED
+
+        match pin:
+            case self._airflow_pin:
+                self.airflow = button_state
+                pub.sendMessage(self._airflow_event(), state=self.airflow)
+
+            case self._pressure_pin:
+                self.pressure = button_state
+                if button_state == states.Button.PRESSED:
+                    pub.sendMessage(self._pressure_event(), state=self.pressure)
+
+            case self._oxygen_pin:
+                self.oxygen = button_state
+                pub.sendMessage(self._oxygen_event(), state=self.oxygen)
+
+            case self._void_waste_pin:
+                self.void_waste = button_state
+                if button_state == states.Button.PRESSED:
+                    pub.sendMessage(self._void_waste_event(), state=self.void_waste)
+
+            case self._cabin_pressure_on_pin if button_state == states.Button.PRESSED:
+                self.cabin_pressure = ECS.CabinPressureState.ON
+                pub.sendMessage(self._cabin_pressure_event(), state=self.cabin_pressure)
+
+            case self._cabin_pressure_off_pin if button_state == states.Button.PRESSED:
+                self.cabin_pressure = ECS.CabinPressureState.OFF
+                pub.sendMessage(self._cabin_pressure_event(), state=self.cabin_pressure)
+
+            case self._cabin_pressure_hold_pin if button_state == states.Button.PRESSED:
+                self.cabin_pressure = ECS.CabinPressureState.HOLD
+                pub.sendMessage(self._cabin_pressure_event(), state=self.cabin_pressure)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
+    def _airflow_event(self):
+        return self._event_name(ECS.Event.AIRFLOW_TOGGLE, self._airflow_pin)
+
     def sub_airflow_toggled(self, listener: Callable[[states.Button], None]) -> None:
         """
         Subscribe to the airflow button being toggled.
@@ -67,8 +102,19 @@ class ECS:
         :param listener: Callback function that takes the following arguments.
              - `state` (`states.Button`) - The current toggleable button state
         """
-        event_name = self._event_name(ECS.Event.AIRFLOW_TOGGLE, self._airflow_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._airflow_event())
+
+    def unsub_airflow_toggled(self, listener: Callable[[states.Button], None]) -> None:
+        """
+        Unsubscribe to the airflow button being toggled.
+
+        :param listener: Callback function that takes the following arguments.
+             - `state` (`states.Button`) - The current toggleable button state
+        """
+        pub.unsubscribe(listener, self._airflow_event())
+
+    def _pressure_event(self):
+        return self._event_name(ECS.Event.PRESSURE_PRESSED, self._pressure_pin)
 
     def sub_pressure_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -76,8 +122,18 @@ class ECS:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(ECS.Event.PRESSURE_PRESSED, self._pressure_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._pressure_event())
+
+    def unsub_pressure_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the pressure button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._pressure_event())
+
+    def _oxygen_event(self):
+        return self._event_name(ECS.Event.OXYGEN_TOGGLE, self._oxygen_pin)
 
     def sub_oxygen_toggled(self, listener: Callable[[states.Button], None]) -> None:
         """
@@ -86,8 +142,19 @@ class ECS:
         :param listener: Callback function that takes the following arguments.
              - `state` (`states.Button`) - The current toggleable button state
         """
-        event_name = self._event_name(ECS.Event.OXYGEN_TOGGLE, self._oxygen_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._oxygen_event())
+
+    def unsub_oxygen_toggled(self, listener: Callable[[states.Button], None]) -> None:
+        """
+        Unsubscribe to the oxygen button being toggled.
+
+        :param listener: Callback function that takes the following arguments.
+             - `state` (`states.Button`) - The current toggleable button state
+        """
+        pub.unsubscribe(listener, self._oxygen_event())
+
+    def _void_waste_event(self):
+        return self._event_name(ECS.Event.VOID_WASTE_PRESSED, self._void_waste_pin)
 
     def sub_void_waste_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -95,18 +162,38 @@ class ECS:
 
         :param listener: Callback function that takes no arguments.
         """
-        event_name = self._event_name(ECS.Event.VOID_WASTE_PRESSED, self._void_waste_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._void_waste_event())
+
+    def unsub_void_waste_pressed(self, listener: Callable[[], None]) -> None:
+        """
+        Unsubscribe to the void waste button being pressed.
+
+        :param listener: Callback function that takes no arguments.
+        """
+        pub.unsubscribe(listener, self._void_waste_event())
+
+    def _cabin_pressure_event(self):
+        return self._event_name(ECS.Event.CABIN_PRESSURE_TOGGLED, self._cabin_pressure_on_pin)
 
     def sub_cabin_pressure_toggled(self, listener: Callable[[CabinPressureState], None]) -> None:
         """
         Subscribe to the cabin pressure switch being toggled.
 
-        :param listener: Callback function that takes no arguments.
+        :param listener: Callback function that takes the following arguments:
+            - `state` (`CabinPressureState`) - The state of the cabin pressure toggle switch.
+
         """
-        event_name = self._event_name(ECS.Event.CABIN_PRESSURE_TOGGLED, self._cabin_pressure_on_pin)
-        pub.subscribe(listener, event_name)
+        pub.subscribe(listener, self._cabin_pressure_event())
+
+    def unsub_cabin_pressure_toggled(self, listener: Callable[[CabinPressureState], None]) -> None:
+        """
+        Unsubscribe to the cabin pressure switch being toggled.
+
+        :param listener: Callback function that takes the following arguments:
+            - `state` (`CabinPressureState`) - The state of the cabin pressure toggle switch.
+        """
+        pub.unsubscribe(listener, self._cabin_pressure_event())
 
     @staticmethod
-    def _event_name(event: Event, pin: int):
+    def _event_name(event: Event, pin: int) -> str:
         return f'{event}_{pin}'

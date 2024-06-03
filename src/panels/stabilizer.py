@@ -1,8 +1,8 @@
-from machine import I2C
-from hardware.pin_manager import PinManager
 from enum import Enum, auto
+from machine import I2C
+from pubsub import pub
+from typing import Callable
 
-# from display.pico_i2c_lcd import I2cLcd
 from sensor.rotary_encoder import RotaryEncoder
 
 
@@ -26,32 +26,84 @@ class Stabilizer:
 
     def __init__(self, i2c: I2C, p1: int, p2: int, p3: int, p4: int):
         self.i2c = i2c
+        self.p1 = p1
+        self.p2 = p2
+        self.p3 = p3
+        self.p4 = p4
         self.rotary_encoder = RotaryEncoder(p1, p2, p3, p4)
-
-    def update(self):
-        encoder_reading = self.rotary_encoder.read()
-
-        if encoder_reading == self.previous_reading:
-            return
-
-        self.stability += self.previous_reading - encoder_reading
-        self.previous_reading = encoder_reading
+        self.rotary_encoder.sub_encoder_change(self._on_encoder_change)
 
     # ---- Event Handling ----------------------------------------------------------------------------------------------
 
     def _on_encoder_change(self, value: int):
-        pass
+        pub.sendMessage(self._stabilizer_event(), value=value)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
 
-    def sub_stabilizer_change(self, listener):
-        pass
+    def _stabilizer_event(self) -> str:
+        return self._event_name(Stabilizer.Event.POSITION_CHANGE, self.p1)
 
-    def sub_stabilizer_unstable(self, listener):
-        pass
+    def sub_stabilizer_change(self, listener: Callable[[float], None]) -> None:
+        """
+        Subscribe to the stabilizer value changing.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`float`): Current stabilizer value
+        """
+        pub.subscribe(listener, self._stabilizer_event)
+
+    def unsub_stabilizer_change(self, listener: Callable[[float], None]) -> None:
+        """
+        Unsubscribe to the stabilizer value changing.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`float`): Current stabilizer value
+        """
+        pub.unsubscribe(listener, self._stabilizer_event)
+
+    def sub_stabilizer_unstable(self, listener) -> None:
+        """
+        Subscribe to the stabilizer becoming unstable.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`float`): Current stabilizer value
+        """
+        event_name = self._event_name(Stabilizer.Event.UNSTABLE, self.p1)
+        pub.subscribe(listener, event_name)
+
+    def unsub_stabilizer_unstable(self, listener) -> None:
+        """
+        Unsubscribe to the stabilizer becoming unstable.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`float`): Current stabilizer value
+        """
+        event_name = self._event_name(Stabilizer.Event.UNSTABLE, self.p1)
+        pub.unsubscribe(listener, event_name)
 
     def sub_stabilizer_crash(self, listener):
-        pass
+        """
+        Subscribe to the stabilizer crashing into the edge of the limit.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`float`): Current stabilizer value
+        """
+        event_name = self._event_name(Stabilizer.Event.CRASH, self.p1)
+        pub.subscribe(listener, event_name)
+
+    def unsub_stabilizer_crash(self, listener):
+        """
+        Unsubscribe to the stabilizer crashing into the edge of the limit.
+
+        :param listener: Callback function taking the following arguments.
+            - `value` (`float`): Current stabilizer value
+        """
+        event_name = self._event_name(Stabilizer.Event.CRASH, self.p1)
+        pub.unsubscribe(listener, event_name)
+
+    @staticmethod
+    def _event_name(event: Event, pin: int):
+        return f'{event}_{pin}'
 
 
 class LeftStabilizer(Stabilizer):
