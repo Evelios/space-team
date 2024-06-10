@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from pubsub import pub
 from typing import Callable
 
@@ -11,11 +10,11 @@ class Launch:
     Launch panel
     """
 
-    class Event(Enum):
-        KEY_TOGGLE = auto()
-        ESTOP_TOGGLE = auto()
-        START_BUTTON_PRESSED = auto()
-        DIFFICULTY_CHANGED = auto()
+    class Event:
+        KEY_TOGGLE = 'Launch.KeyToggle'
+        ESTOP_TOGGLE = 'Launch.EstopToggle'
+        START_BUTTON_PRESSED = 'Launch.StartButtonPressed'
+        DIFFICULTY_CHANGED = 'Launch.DifficultyChanged'
 
     def __init__(self):
         # ---- Class Values ----
@@ -147,5 +146,5 @@ class Launch:
         pub.unsubscribe(listener, self._difficulty_event)
 
     @staticmethod
-    def _event_name(event: Event, pin: int):
+    def _event_name(event: str, pin: int):
         return f'{event}_{pin}'

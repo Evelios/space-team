@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from pubsub import pub
 from typing import Callable
 
@@ -11,17 +10,17 @@ class ECS:
     Environmental Control Systems Panel.
     """
 
-    class CabinPressureState(Enum):
-        ON = auto()
-        OFF = auto()
-        HOLD = auto()
+    class CabinPressureState:
+        ON = 'Ecs.CabinPressure.On'
+        OFF = 'Ecs.CabinPressure.Off'
+        HOLD = 'Ecs.CabinPressure.Hold'
 
-    class Event(Enum):
-        AIRFLOW_TOGGLE = auto()
-        PRESSURE_PRESSED = auto()
-        OXYGEN_TOGGLE = auto()
-        VOID_WASTE_PRESSED = auto()
-        CABIN_PRESSURE_TOGGLED = auto()
+    class Event:
+        AIRFLOW_TOGGLE = 'Ecs.AirflowToggle'
+        PRESSURE_PRESSED = 'Ecs.PressurePressed'
+        OXYGEN_TOGGLE = 'Ecs.OxygenToggle'
+        VOID_WASTE_PRESSED = 'Ecs.VoidWastePressed'
+        CABIN_PRESSURE_TOGGLED = 'Ecs.CabinPressureToggled'
 
     def __init__(self):
         # ---- Pin Assignments ----
@@ -195,5 +194,5 @@ class ECS:
         pub.unsubscribe(listener, self._cabin_pressure_event())
 
     @staticmethod
-    def _event_name(event: Event, pin: int) -> str:
+    def _event_name(event: str, pin: int) -> str:
         return f'{event}_{pin}'

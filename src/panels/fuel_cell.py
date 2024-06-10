@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from typing import Callable
 from pubsub import pub
 
@@ -11,17 +10,17 @@ class FuelCell:
     while on.
     """
 
-    class Event(Enum):
-        TURNED_ON = auto()
-        TURNED_OFF = auto()
-        FAULTED = auto()
-        CLEARED_FAULT = auto()
+    class Event(str):
+        TURNED_ON = 'FuelCell.TurnedOn'
+        TURNED_OFF = 'FuelCell.TurnedOff'
+        FAULTED = 'FuelCell.Faulted'
+        CLEARED_FAULT = 'FuelCell.ClearedFault'
 
-    class State(Enum):
+    class State(str):
         """ Fuel cell state tracks how the fuel cell is operating. """
-        ON = auto()
-        OFF = auto()
-        FAULT = auto()
+        ON = 'FuelCell.On'
+        OFF = 'FuelCell.Off'
+        FAULT = 'FuelCell.Fault'
 
     def __init__(self, on_off_pin: int, cycle_pin: int):
         self.on_off_pin = on_off_pin
@@ -149,7 +148,7 @@ class FuelCell:
         pub.unsubscribe(listener, self._cleared_fault_event())
 
     @staticmethod
-    def _event_name(event: Event, event_id: int) -> str:
+    def _event_name(event: str, event_id: int) -> str:
         """
         Create and event name for publishing and subscribing.
 

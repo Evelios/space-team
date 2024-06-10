@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from machine import I2C
 from pubsub import pub
 from typing import Callable
@@ -11,10 +10,10 @@ class Stabilizer:
     Stabilizer panel
     """
 
-    class Event(Enum):
-        POSITION_CHANGE = auto()
-        UNSTABLE = auto()
-        CRASH = auto()
+    class Event(str):
+        POSITION_CHANGE = 'Stabilizer.PositionChange'
+        UNSTABLE = 'Stabilizer.Unstable'
+        CRASH = 'Stabilizer.Crash'
 
     stability: float = 0
     """Stability of this device. Range -1 -> 1"""
@@ -102,7 +101,7 @@ class Stabilizer:
         pub.unsubscribe(listener, event_name)
 
     @staticmethod
-    def _event_name(event: Event, pin: int):
+    def _event_name(event: str, pin: int):
         return f'{event}_{pin}'
 
 

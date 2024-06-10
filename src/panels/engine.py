@@ -1,5 +1,3 @@
-from enum import Enum, auto
-
 import pubsub.pub
 from machine import I2C
 from pubsub import pub
@@ -24,8 +22,8 @@ class Engine:
         engine.fuel_cell[0].fault() # List access to fault fuel cell 1
     """
 
-    class Event(Enum):
-        ON_OFF_TOGGLED = auto()
+    class Event:
+        ON_OFF_TOGGLED = 'Engine.OnOffToggled'
 
     def __init__(self, i2c: I2C):
         """
@@ -86,5 +84,5 @@ class Engine:
         pub.unsubscribe(listener, self._on_off_event)
 
     @staticmethod
-    def _event_name(event: Event, pin: int) -> str:
+    def _event_name(event: str, pin: int) -> str:
         return f'{event}_{pin}'

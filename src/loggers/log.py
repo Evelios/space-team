@@ -1,16 +1,14 @@
-from enum import IntEnum, auto
-
-
 class Log:
     """
-
+    Basic logger class for handling different severity levels for printing.
     """
 
-    class Severity(IntEnum):
-        DEBUG = auto()
-        INFO = auto()
-        WARNING = auto()
-        ERROR = auto()
+    class Severity:
+        NOLOG = 0
+        DEBUG = 1
+        INFO = 2
+        WARNING = 3
+        ERROR = 4
 
     severity = Severity.DEBUG
 

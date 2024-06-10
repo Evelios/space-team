@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from pubsub import pub
 from typing import Dict, Union, Callable
 import machine
@@ -13,11 +12,11 @@ class PinManager:
     manager takes care of routing communication through the digital and analog input/output expander chips.
     """
 
-    class Event(Enum):
-        DIGITAL_RISING = auto()
-        DIGITAL_FALLING = auto()
-        DIGITAL_CHANGE = auto()
-        ANALOG_CHANGE = auto()
+    class Event:
+        DIGITAL_RISING = 'PinManager.DigitalRising'
+        DIGITAL_FALLING = 'PinManager.DigitalFalling'
+        DIGITAL_CHANGE = 'PinManager.DigitalChange'
+        ANALOG_CHANGE = 'PinManager.AnalogChange'
 
     def __init__(self, i2c: machine.I2C):
         self.i2c = i2c
@@ -254,7 +253,7 @@ class PinManager:
         pub.subscribe(listener, PinManager._pin_event_name(PinManager.Event.ANALOG_CHANGE, pin))
 
     @staticmethod
-    def _pin_event_name(event: Event, pin: int) -> str:
+    def _pin_event_name(event: str, pin: int) -> str:
         """
         Get the string representation of the event on a particular pin. The event name is needed as a string for the\
         PyPubSub class which handles the observer pattern for the PinManager.

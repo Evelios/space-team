@@ -1,4 +1,3 @@
-from enum import Enum, auto
 from pubsub import pub
 from typing import Callable
 
@@ -12,29 +11,29 @@ class FlightControl:
     rcs thrusters.
     """
 
-    class DriveButton(Enum):
-        TRACK_JAM = auto()
-        AUTO_CYCLE_START = auto()
-        SPLIT_NORMAL = auto()
-        AUTO_MANUAL = auto()
+    class DriveButton:
+        TRACK_JAM = 'FlightControl.TrackJam'
+        AUTO_CYCLE_START = 'FlightControl.AutoCycleStart'
+        SPLIT_NORMAL = 'FlightControl.SplitNormal'
+        AUTO_MANUAL = 'FlightControl.AutoManual'
 
-    class FlightMode(Enum):
-        ONE = auto()
-        TWO = auto()
-        STOP = auto()
+    class FlightMode:
+        ONE = 'FlightControl.One'
+        TWO = 'FlightControl.Two'
+        STOP = 'FlightControl.Stop'
 
-    class Event(Enum):
-        TRACK_JAM_PRESSED = auto()
-        AUTO_CYCLE_START_PRESSED = auto()
-        SPLIT_NORMAL_PRESSED = auto()
-        AUTO_MANUAL_PRESSED = auto()
-        WARP_DRIVE_ENGAGED = auto()
-        RCS_THRUSTER_TOGGLED = auto()
-        STOP_BUTTON_PRESSED = auto()
-        ONE_BUTTON_PRESSED = auto()
-        TWO_BUTTON_PRESSED = auto()
-        Y_AXIS_INVERT_TOGGLED = auto()
-        JOYSTICK_MOVE = auto()
+    class Event:
+        TRACK_JAM_PRESSED = 'FlightControl.TrackJamPressed'
+        AUTO_CYCLE_START_PRESSED = 'FlightControl.AutoCycleStartPressed'
+        SPLIT_NORMAL_PRESSED = 'FlightControl.SplitNormalPressed'
+        AUTO_MANUAL_PRESSED = 'FlightControl.AutoManualPressed'
+        WARP_DRIVE_ENGAGED = 'FlightControl.WarpDriveEngaged'
+        RCS_THRUSTER_TOGGLED = 'FlightControl.RcsThrusterToggled'
+        STOP_BUTTON_PRESSED = 'FlightControl.StopButtonPressed'
+        ONE_BUTTON_PRESSED = 'FlightControl.OneButtonPressed'
+        TWO_BUTTON_PRESSED = 'FlightControl.TwoButtonPressed'
+        Y_AXIS_INVERT_TOGGLED = 'FlightControl.YAxisInvertToggled'
+        JOYSTICK_MOVE = 'FlightControl.JoystickMove'
 
     def __init__(self):
         # ---- Class Values ----
@@ -380,7 +379,7 @@ class FlightControl:
         pub.unsubscribe(listener, self._joystick_event())
 
     @staticmethod
-    def _event_name(event: Event, pin: int, pin2: int = 0):
+    def _event_name(event: str, pin: int, pin2: int = 0):
         if pin2 == 0:
             return f'{event}_{pin}'
         else:
