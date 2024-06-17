@@ -1,8 +1,8 @@
-from pubsub import pub
 from typing import Callable
 
 from hardware.pin_manager import PinManager
 from hardware import states
+from pubsub.publisher import Publisher
 
 
 class Launch:
@@ -16,7 +16,10 @@ class Launch:
         START_BUTTON_PRESSED = 'Launch.StartButtonPressed'
         DIFFICULTY_CHANGED = 'Launch.DifficultyChanged'
 
-    def __init__(self):
+    def __init__(self, pin_manager: PinManager):
+        self.pin_manager = pin_manager
+        self.publisher = Publisher()
+
         # ---- Class Values ----
         self.difficulty = 0
 
@@ -33,12 +36,12 @@ class Launch:
         self.estop = states.Button.RELEASED
 
         # ---- Pin Change Event Subscriptions ----
-        PinManager.sub_digital_change(self._key_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._estop_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._start_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._key_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._estop_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._start_pin, self._on_digital_change)
 
         for pin in self._difficulty_pins:
-            PinManager.sub_digital_change(pin, self._on_digital_change)
+            self.pin_manager.sub_digital_change(pin, self._on_digital_change)
 
     # ---- Modifiers ---------------------------------------------------------------------------------------------------
 
@@ -48,11 +51,11 @@ class Launch:
         match pin:
             case self._key_pin:
                 self.key = button_state
-                pub.sendMessage(self._key_event())
+                self.publisher.send_message(self._key_event())
 
             case self._estop_pin:
                 self.estop = button_state
-                pub.sendMessage(self._estop_event())
+                self.publisher.send_message(self._estop_event())
 
             case _ if pin in self._difficulty_pins:
                 # TODO: Difficulty calculation
@@ -73,7 +76,7 @@ class Launch:
         :param listener: Callback function taking the following arguments.
             - `state` (`SwitchState`): Current state of the switch
         """
-        pub.subscribe(listener, self._key_event())
+        self.publisher.subscribe(self._key_event(), listener)
 
     def unsub_key_toggle(self, listener: Callable[[int], None]) -> None:
         """
@@ -82,7 +85,7 @@ class Launch:
         :param listener: Callback function taking the following arguments.
             - `state` (`SwitchState`): Current state of the switch
         """
-        pub.unsubscribe(listener, self._key_event())
+        self.publisher.unsubscribe(self._key_event(), listener)
 
     def _estop_event(self):
         return self._event_name(Launch.Event.ESTOP_TOGGLE, pin=self._estop_pin)
@@ -94,7 +97,7 @@ class Launch:
         :param listener: Callback function taking the following arguments.
             - `state` (`Switch`): Current state of the switch
         """
-        pub.subscribe(listener, self._estop_event())
+        self.publisher.subscribe(self._estop_event(), listener)
 
     def unsub_estop_toggle(self, listener: Callable[[states.Switch], None]) -> None:
         """
@@ -103,7 +106,7 @@ class Launch:
         :param listener: Callback function taking the following arguments.
             - `state` (`Switch`): Current state of the switch
         """
-        pub.unsubscribe(listener, self._estop_event())
+        self.publisher.unsubscribe(self._estop_event(), listener)
 
     def _start_event(self):
         return self._event_name(Launch.Event.START_BUTTON_PRESSED, pin=self._start_pin)
@@ -114,7 +117,7 @@ class Launch:
 
         :param listener: Callback function taking no arguments.
         """
-        pub.subscribe(listener, self._start_event())
+        self.publisher.subscribe(self._start_event(), listener)
 
     def unsub_start_button_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -122,7 +125,7 @@ class Launch:
 
         :param listener: Callback function taking no arguments.
         """
-        pub.unsubscribe(listener, self._start_event())
+        self.publisher.unsubscribe(self._start_event(), listener)
 
     def _difficulty_event(self):
         return self._event_name(Launch.Event.DIFFICULTY_CHANGED, pin=self._difficulty_pins[0])
@@ -134,7 +137,7 @@ class Launch:
         :param listener: Callback function taking the following arguments.
             - `difficulty` (`int`): Current difficulty from the launch panel
         """
-        pub.subscribe(listener, self._difficulty_event())
+        self.publisher.subscribe(self._difficulty_event(), listener)
 
     def unsub_difficulty_change(self, listener: Callable[[int], None]) -> None:
         """
@@ -143,7 +146,7 @@ class Launch:
         :param listener: Callback function taking the following arguments.
             - `difficulty` (`int`): Current difficulty from the launch panel
         """
-        pub.unsubscribe(listener, self._difficulty_event)
+        self.publisher.unsubscribe(self._difficulty_event(), listener)
 
     @staticmethod
     def _event_name(event: str, pin: int):

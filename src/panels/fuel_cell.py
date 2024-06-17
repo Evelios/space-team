@@ -1,6 +1,6 @@
 from typing import Callable
-from pubsub import pub
 
+from pubsub.publisher import Publisher
 from hardware.pin_manager import PinManager
 
 
@@ -22,14 +22,17 @@ class FuelCell:
         OFF = 'FuelCell.Off'
         FAULT = 'FuelCell.Fault'
 
-    def __init__(self, on_off_pin: int, cycle_pin: int):
+    def __init__(self, on_off_pin: int, cycle_pin: int, pin_manager: PinManager):
+        self.pin_manager = pin_manager
+        self.publisher = Publisher()
+
         self.on_off_pin = on_off_pin
         self.cycle_pin = cycle_pin
         self.state = FuelCell.State.OFF
 
         # Setup event triggers for the on/off switch and the cycle engine button
-        PinManager.sub_digital_change(self.on_off_pin, self._on_off_switch_toggled)
-        PinManager.sub_digital_falling(self.cycle_pin, self._cycle_button_pressed)
+        self.pin_manager.sub_digital_change(self.on_off_pin, self._on_off_switch_toggled)
+        self.pin_manager.sub_digital_falling(self.cycle_pin, self._cycle_button_pressed)
 
     # ---- Event Handling ----------------------------------------------------------------------------------------------
 
@@ -48,10 +51,10 @@ class FuelCell:
         """
         if on_off_pin_state == 0:
             self.state = FuelCell.State.ON
-            pub.sendMessage(self._turned_on_event())
+            self.publisher.send_message(self._turned_on_event())
         else:
             self.state = FuelCell.State.OFF
-            pub.sendMessage(self._turned_off_event())
+            self.publisher.send_message(self._turned_off_event())
 
     def _cleared_fault_event(self):
         return FuelCell._event_name(FuelCell.Event.CLEARED_FAULT, self.cycle_pin)
@@ -67,7 +70,7 @@ class FuelCell:
 
         if cycle_pin_state == 1 and self.state == FuelCell.State.FAULT:
             self.state = FuelCell.State.ON
-            pub.sendMessage(self._cleared_fault_event())
+            self.publisher.send_message(self._cleared_fault_event())
 
     # ---- Actions -----------------------------------------------------------------------------------------------------
 
@@ -79,7 +82,7 @@ class FuelCell:
         Fault the current fuel cell.
         """
         self.state = FuelCell.State.FAULT
-        pub.sendMessage(self._faulted_event())
+        self.publisher.send_message(self._faulted_event())
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
 
@@ -89,7 +92,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.subscribe(listener, self._turned_on_event())
+        self.publisher.subscribe(self._turned_on_event(), listener)
 
     def unsub_turned_on(self, listener: Callable[[], None]) -> None:
         """
@@ -97,7 +100,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.unsubscribe(listener, self._turned_on_event())
+        self.publisher.unsubscribe(self._turned_on_event(), listener)
 
     def sub_turned_off(self, listener: Callable[[], None]) -> None:
         """
@@ -105,7 +108,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.subscribe(listener, self._turned_off_event())
+        self.publisher.subscribe(self._turned_off_event(), listener)
 
     def unsub_turned_off(self, listener: Callable[[], None]) -> None:
         """
@@ -113,7 +116,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.subscribe(listener, self._turned_off_event())
+        self.publisher.subscribe(self._turned_off_event(), listener)
 
     def sub_faulted(self, listener: Callable[[], None]) -> None:
         """
@@ -121,7 +124,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.subscribe(listener, self._faulted_event())
+        self.publisher.subscribe(self._faulted_event(), listener)
 
     def unsub_faulted(self, listener: Callable[[], None]) -> None:
         """
@@ -129,7 +132,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.unsubscribe(listener, self._faulted_event())
+        self.publisher.unsubscribe(self._faulted_event(), listener)
 
     def sub_cleared_fault(self, listener: Callable[[], None]) -> None:
         """
@@ -137,7 +140,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.subscribe(listener, self._cleared_fault_event())
+        self.publisher.subscribe(self._cleared_fault_event(), listener)
 
     def unsub_cleared_fault(self, listener: Callable[[], None]) -> None:
         """
@@ -145,7 +148,7 @@ class FuelCell:
 
         :param listener: Callable that takes no arguments.
         """
-        pub.unsubscribe(listener, self._cleared_fault_event())
+        self.publisher.unsubscribe(self._cleared_fault_event(), listener)
 
     @staticmethod
     def _event_name(event: str, event_id: int) -> str:

@@ -1,8 +1,9 @@
 from machine import I2C
-from pubsub import pub
 from typing import Callable
 
 from sensor.rotary_encoder import RotaryEncoder
+from pubsub.publisher import Publisher
+from hardware.pin_manager import PinManager
 
 
 class Stabilizer:
@@ -23,7 +24,8 @@ class Stabilizer:
 
     previous_reading: float = 0
 
-    def __init__(self, i2c: I2C, p1: int, p2: int, p3: int, p4: int):
+    def __init__(self, p1: int, p2: int, p3: int, p4: int, i2c: I2C, pin_manager: PinManager):
+        self.pin_manager = pin_manager
         self.i2c = i2c
         self.p1 = p1
         self.p2 = p2
@@ -31,11 +33,12 @@ class Stabilizer:
         self.p4 = p4
         self.rotary_encoder = RotaryEncoder(p1, p2, p3, p4)
         self.rotary_encoder.sub_encoder_change(self._on_encoder_change)
+        self.publisher = Publisher()
 
     # ---- Event Handling ----------------------------------------------------------------------------------------------
 
     def _on_encoder_change(self, value: int):
-        pub.sendMessage(self._stabilizer_event(), value=value)
+        self.publisher.send_message(self._stabilizer_event(), value=value)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
 
@@ -49,7 +52,7 @@ class Stabilizer:
         :param listener: Callback function taking the following arguments.
             - `value` (`float`): Current stabilizer value
         """
-        pub.subscribe(listener, self._stabilizer_event)
+        self.publisher.subscribe(self._stabilizer_event(), listener)
 
     def unsub_stabilizer_change(self, listener: Callable[[float], None]) -> None:
         """
@@ -58,7 +61,7 @@ class Stabilizer:
         :param listener: Callback function taking the following arguments.
             - `value` (`float`): Current stabilizer value
         """
-        pub.unsubscribe(listener, self._stabilizer_event)
+        self.publisher.unsubscribe(self._stabilizer_event(), listener)
 
     def sub_stabilizer_unstable(self, listener) -> None:
         """
@@ -68,7 +71,7 @@ class Stabilizer:
             - `value` (`float`): Current stabilizer value
         """
         event_name = self._event_name(Stabilizer.Event.UNSTABLE, self.p1)
-        pub.subscribe(listener, event_name)
+        self.publisher.subscribe(event_name, listener)
 
     def unsub_stabilizer_unstable(self, listener) -> None:
         """
@@ -78,7 +81,7 @@ class Stabilizer:
             - `value` (`float`): Current stabilizer value
         """
         event_name = self._event_name(Stabilizer.Event.UNSTABLE, self.p1)
-        pub.unsubscribe(listener, event_name)
+        self.publisher.unsubscribe(event_name, listener)
 
     def sub_stabilizer_crash(self, listener):
         """
@@ -88,7 +91,7 @@ class Stabilizer:
             - `value` (`float`): Current stabilizer value
         """
         event_name = self._event_name(Stabilizer.Event.CRASH, self.p1)
-        pub.subscribe(listener, event_name)
+        self.publisher.subscribe(event_name, listener)
 
     def unsub_stabilizer_crash(self, listener):
         """
@@ -98,7 +101,7 @@ class Stabilizer:
             - `value` (`float`): Current stabilizer value
         """
         event_name = self._event_name(Stabilizer.Event.CRASH, self.p1)
-        pub.unsubscribe(listener, event_name)
+        self.publisher.unsubscribe(event_name, listener)
 
     @staticmethod
     def _event_name(event: str, pin: int):
@@ -106,10 +109,10 @@ class Stabilizer:
 
 
 class LeftStabilizer(Stabilizer):
-    def __init__(self, i2c: I2C):
-        super().__init__(i2c, 1, 2, 3, 4)
+    def __init__(self, i2c: I2C, pin_manager: PinManager):
+        super().__init__(1, 2, 3, 4, i2c, pin_manager)
 
 
 class RightStabilizer(Stabilizer):
-    def __init__(self, i2c: I2C):
-        super().__init__(i2c, 17, 18, 19, 20)
+    def __init__(self, i2c: I2C, pin_manager: PinManager):
+        super().__init__(17, 18, 19, 20, i2c, pin_manager)

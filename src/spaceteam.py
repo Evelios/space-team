@@ -17,7 +17,7 @@ class SpaceTeam:
         Log.info(f'Initialized I2C with SDA:{sda}, SCL:{scl}, at Frequency:{freq}')
 
         self.pin_manager = PinManager(self.i2c)
-        self.pin_logger = PinLogger()
+        self.pin_logger = PinLogger(self.pin_manager)
 
         self.running = True
 
