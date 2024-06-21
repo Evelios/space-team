@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Any
+from typing import Callable, Any
 
 from loggers.log import Log
 
@@ -25,7 +25,7 @@ class Publisher:
         >>> 'Listener received: Published Message'
     """
 
-    subscribers: Dict[(int, str), Callable[[Any], Any]]
+    subscribers: dict[(int, str), Callable[[Any], Any]]
     """
     Subscriber dictionary containing the listener hash and the callback string as the keys. The value stored
     in the dictionary contains the callback listener function that subscribed to the event.
@@ -67,7 +67,8 @@ class Publisher:
         """
         messages_sent = 0
 
-        for callback, key in self.subscribers.items():
+        for (key, stored_message), callback in self.subscribers:
+            callback = self.subscribers[key, stored_message]
             if key == message:
                 messages_sent = messages_sent + 1
                 callback(**kwargs)

@@ -1,4 +1,4 @@
-from typing import Dict, Union, Callable
+from typing import Union, Callable
 import machine
 from pubsub.publisher import Publisher
 
@@ -27,7 +27,7 @@ class PinManager:
         self.pins17to32 = MCP23017(0x21, i2c)
         self.pins49to64 = MCP23017(0x22, i2c)
         self.adc = AdcMux(1, 0, 0, 0, 0)
-        self.local_pins: Dict[int, Union[machine.Pin, machine.ADC]] = {}  # Holds the gpio 33 -> 48
+        self.local_pins: dict[int, Union[machine.Pin, machine.ADC]] = {}  # Holds the gpio 33 -> 48
 
         # Sampling for reading pin inputs and monitoring for changes
         self._sample_rate = 50  # ms
