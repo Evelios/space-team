@@ -41,10 +41,10 @@ class RotaryEncoder:
         self.encoded_bits = [0, 0, 0, 0]
         self.position = 0
 
-        PinManager.sub_digital_change(self.p1, self._on_pin_change)
-        PinManager.sub_digital_change(self.p2, self._on_pin_change)
-        PinManager.sub_digital_change(self.p3, self._on_pin_change)
-        PinManager.sub_digital_change(self.p4, self._on_pin_change)
+        self.pin_manager.sub_digital_change(self.p1, self._on_pin_change)
+        self.pin_manager.sub_digital_change(self.p2, self._on_pin_change)
+        self.pin_manager.sub_digital_change(self.p3, self._on_pin_change)
+        self.pin_manager.sub_digital_change(self.p4, self._on_pin_change)
 
     def read(self) -> int:
         """
@@ -82,7 +82,7 @@ class RotaryEncoder:
 
         if encoder_value != self.position:
             self.position = encoder_value
-            pub.sendMessage(self._change_event_name(), value=self.position)
+            self.publisher.send_message(self._change_event_name(), value=self.position)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
 
@@ -93,7 +93,7 @@ class RotaryEncoder:
         :param listener: Callback function taking the following arguments.
             - `value` (`int`): Current value of the encoder
         """
-        pub.subscribe(listener, self._change_event_name())
+        self.publisher.subscribe(self._change_event_name(), listener)
 
     def unsub_encoder_change(self, listener: Callable[[int], None]) -> None:
         """
@@ -102,7 +102,7 @@ class RotaryEncoder:
         :param listener: Callback function taking the following arguments.
             - `value` (`int`): Current value of the encoder
         """
-        pub.unsubscribe(listener, self._change_event_name())
+        self.publisher.unsubscribe(self._change_event_name(), listener)
 
     def _change_event_name(self):
         return f'RotaryEncoder_{self.p1}_{self.p2}_{self.p3}_{self.p4}.ENCODER_CHANGE'

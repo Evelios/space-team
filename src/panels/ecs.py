@@ -1,7 +1,6 @@
-from enum import Enum, auto
-from pubsub import pub
 from typing import Callable
 
+from pubsub.publisher import Publisher
 from hardware import states
 from hardware.pin_manager import PinManager
 
@@ -11,19 +10,22 @@ class ECS:
     Environmental Control Systems Panel.
     """
 
-    class CabinPressureState(Enum):
-        ON = auto()
-        OFF = auto()
-        HOLD = auto()
+    class CabinPressureState:
+        ON = 'Ecs.CabinPressure.On'
+        OFF = 'Ecs.CabinPressure.Off'
+        HOLD = 'Ecs.CabinPressure.Hold'
 
-    class Event(Enum):
-        AIRFLOW_TOGGLE = auto()
-        PRESSURE_PRESSED = auto()
-        OXYGEN_TOGGLE = auto()
-        VOID_WASTE_PRESSED = auto()
-        CABIN_PRESSURE_TOGGLED = auto()
+    class Event:
+        AIRFLOW_TOGGLE = 'Ecs.AirflowToggle'
+        PRESSURE_PRESSED = 'Ecs.PressurePressed'
+        OXYGEN_TOGGLE = 'Ecs.OxygenToggle'
+        VOID_WASTE_PRESSED = 'Ecs.VoidWastePressed'
+        CABIN_PRESSURE_TOGGLED = 'Ecs.CabinPressureToggled'
 
-    def __init__(self):
+    def __init__(self, pin_manager: PinManager):
+        self.publisher = Publisher()
+        self.pin_manager = pin_manager
+
         # ---- Pin Assignments ----
         self._airflow_pin = 21
         self._pressure_pin = 22
@@ -41,13 +43,13 @@ class ECS:
         self.cabin_pressure = ECS.CabinPressureState.OFF
 
         # ---- Pin Change Event Subscriptions ----
-        PinManager.sub_digital_change(self._airflow_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._pressure_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._oxygen_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._void_waste_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._cabin_pressure_on_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._cabin_pressure_off_pin, self._on_digital_change)
-        PinManager.sub_digital_change(self._cabin_pressure_hold_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._airflow_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._pressure_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._oxygen_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._void_waste_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._cabin_pressure_on_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._cabin_pressure_off_pin, self._on_digital_change)
+        self.pin_manager.sub_digital_change(self._cabin_pressure_hold_pin, self._on_digital_change)
 
     # ---- Event Handling ----------------------------------------------------------------------------------------------
 
@@ -63,33 +65,33 @@ class ECS:
         match pin:
             case self._airflow_pin:
                 self.airflow = button_state
-                pub.sendMessage(self._airflow_event(), state=self.airflow)
+                self.publisher.send_message(self._airflow_event(), state=self.airflow)
 
             case self._pressure_pin:
                 self.pressure = button_state
                 if button_state == states.Button.PRESSED:
-                    pub.sendMessage(self._pressure_event(), state=self.pressure)
+                    self.publisher.send_message(self._pressure_event(), state=self.pressure)
 
             case self._oxygen_pin:
                 self.oxygen = button_state
-                pub.sendMessage(self._oxygen_event(), state=self.oxygen)
+                self.publisher.send_message(self._oxygen_event(), state=self.oxygen)
 
             case self._void_waste_pin:
                 self.void_waste = button_state
                 if button_state == states.Button.PRESSED:
-                    pub.sendMessage(self._void_waste_event(), state=self.void_waste)
+                    self.publisher.send_message(self._void_waste_event(), state=self.void_waste)
 
             case self._cabin_pressure_on_pin if button_state == states.Button.PRESSED:
                 self.cabin_pressure = ECS.CabinPressureState.ON
-                pub.sendMessage(self._cabin_pressure_event(), state=self.cabin_pressure)
+                self.publisher.send_message(self._cabin_pressure_event(), state=self.cabin_pressure)
 
             case self._cabin_pressure_off_pin if button_state == states.Button.PRESSED:
                 self.cabin_pressure = ECS.CabinPressureState.OFF
-                pub.sendMessage(self._cabin_pressure_event(), state=self.cabin_pressure)
+                self.publisher.send_message(self._cabin_pressure_event(), state=self.cabin_pressure)
 
             case self._cabin_pressure_hold_pin if button_state == states.Button.PRESSED:
                 self.cabin_pressure = ECS.CabinPressureState.HOLD
-                pub.sendMessage(self._cabin_pressure_event(), state=self.cabin_pressure)
+                self.publisher.send_message(self._cabin_pressure_event(), state=self.cabin_pressure)
 
     # ---- Subscriptions -----------------------------------------------------------------------------------------------
     def _airflow_event(self):
@@ -102,7 +104,7 @@ class ECS:
         :param listener: Callback function that takes the following arguments.
              - `state` (`states.Button`) - The current toggleable button state
         """
-        pub.subscribe(listener, self._airflow_event())
+        self.publisher.subscribe(self._airflow_event(), listener)
 
     def unsub_airflow_toggled(self, listener: Callable[[states.Button], None]) -> None:
         """
@@ -111,7 +113,7 @@ class ECS:
         :param listener: Callback function that takes the following arguments.
              - `state` (`states.Button`) - The current toggleable button state
         """
-        pub.unsubscribe(listener, self._airflow_event())
+        self.publisher.unsubscribe(self._airflow_event(), listener)
 
     def _pressure_event(self):
         return self._event_name(ECS.Event.PRESSURE_PRESSED, self._pressure_pin)
@@ -122,7 +124,7 @@ class ECS:
 
         :param listener: Callback function that takes no arguments.
         """
-        pub.subscribe(listener, self._pressure_event())
+        self.publisher.subscribe(self._pressure_event(), listener)
 
     def unsub_pressure_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -130,7 +132,7 @@ class ECS:
 
         :param listener: Callback function that takes no arguments.
         """
-        pub.unsubscribe(listener, self._pressure_event())
+        self.publisher.unsubscribe(self._pressure_event(), listener)
 
     def _oxygen_event(self):
         return self._event_name(ECS.Event.OXYGEN_TOGGLE, self._oxygen_pin)
@@ -142,7 +144,7 @@ class ECS:
         :param listener: Callback function that takes the following arguments.
              - `state` (`states.Button`) - The current toggleable button state
         """
-        pub.subscribe(listener, self._oxygen_event())
+        self.publisher.subscribe(self._oxygen_event(), listener)
 
     def unsub_oxygen_toggled(self, listener: Callable[[states.Button], None]) -> None:
         """
@@ -151,7 +153,7 @@ class ECS:
         :param listener: Callback function that takes the following arguments.
              - `state` (`states.Button`) - The current toggleable button state
         """
-        pub.unsubscribe(listener, self._oxygen_event())
+        self.publisher.unsubscribe(self._oxygen_event(), listener)
 
     def _void_waste_event(self):
         return self._event_name(ECS.Event.VOID_WASTE_PRESSED, self._void_waste_pin)
@@ -162,7 +164,7 @@ class ECS:
 
         :param listener: Callback function that takes no arguments.
         """
-        pub.subscribe(listener, self._void_waste_event())
+        self.publisher.subscribe(self._void_waste_event(), listener)
 
     def unsub_void_waste_pressed(self, listener: Callable[[], None]) -> None:
         """
@@ -170,7 +172,7 @@ class ECS:
 
         :param listener: Callback function that takes no arguments.
         """
-        pub.unsubscribe(listener, self._void_waste_event())
+        self.publisher.unsubscribe(self._void_waste_event(), listener)
 
     def _cabin_pressure_event(self):
         return self._event_name(ECS.Event.CABIN_PRESSURE_TOGGLED, self._cabin_pressure_on_pin)
@@ -183,7 +185,7 @@ class ECS:
             - `state` (`CabinPressureState`) - The state of the cabin pressure toggle switch.
 
         """
-        pub.subscribe(listener, self._cabin_pressure_event())
+        self.publisher.subscribe(self._cabin_pressure_event(), listener)
 
     def unsub_cabin_pressure_toggled(self, listener: Callable[[CabinPressureState], None]) -> None:
         """
@@ -192,8 +194,8 @@ class ECS:
         :param listener: Callback function that takes the following arguments:
             - `state` (`CabinPressureState`) - The state of the cabin pressure toggle switch.
         """
-        pub.unsubscribe(listener, self._cabin_pressure_event())
+        self.publisher.unsubscribe(self._cabin_pressure_event(), listener)
 
     @staticmethod
-    def _event_name(event: Event, pin: int) -> str:
+    def _event_name(event: str, pin: int) -> str:
         return f'{event}_{pin}'

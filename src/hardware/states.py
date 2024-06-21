@@ -1,11 +1,8 @@
-from enum import Enum, auto
+class Switch:
+    ON = 'Switch.On'
+    OFF = 'Switch.Off'
 
 
-class Switch(Enum):
-    ON = auto()
-    OFF = auto()
-
-
-class Button(Enum):
-    PRESSED = auto()
-    RELEASED = auto()
+class Button:
+    PRESSED = 'Button.Pressed'
+    RELEASED = 'Button.Released'
