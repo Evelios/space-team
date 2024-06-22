@@ -23,9 +23,9 @@ class PinManager:
 
         self.i2c = i2c
 
-        self.pins1to16 = MCP23017(0x20, i2c)
-        self.pins17to32 = MCP23017(0x21, i2c)
-        self.pins49to64 = MCP23017(0x22, i2c)
+        self.pins1to16 = MCP23017(i2c, 0x20)
+        self.pins17to32 = MCP23017(i2c, 0x21)
+        self.pins49to64 = MCP23017(i2c, 0x22)
         self.adc = AdcMux(1, 0, 0, 0, 0)
         self.local_pins: dict[int, Union[machine.Pin, machine.ADC]] = {}  # Holds the gpio 33 -> 48
 

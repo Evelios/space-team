@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from machine import I2C
+
 __version__ = '0.1.4'
 
 # register addresses in port=0, bank=1 mode (easier maths to convert)
@@ -174,7 +176,7 @@ def _flip_bit(value, condition, bit):
 
 
 class MCP23017:
-    def __init__(self, i2c, address=0x20):
+    def __init__(self, i2c: I2C, address=0x20):
         self._i2c = i2c
         self._address = address
         self._config = 0x00

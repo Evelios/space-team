@@ -16,6 +16,9 @@ class SpaceTeam:
         self.i2c = machine.I2C(0, sda=machine.Pin(sda), scl=machine.Pin(scl), freq=freq)
         Log.info(f'Initialized I2C with SDA:{sda}, SCL:{scl}, at Frequency:{freq}')
 
+        for device in self.i2c.scan():
+            Log.info(f'Found connected device: {device}')
+
         self.pin_manager = PinManager(self.i2c)
         self.pin_logger = PinLogger(self.pin_manager)
 
